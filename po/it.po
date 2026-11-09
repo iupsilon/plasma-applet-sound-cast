@@ -1,0 +1,544 @@
+# Italian translation of the sound-cast Plasma widget.
+# This file is distributed under the same license as the sound-cast widget.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: plasma_applet_org.soundcast.status\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-11-10 14:15+0100\n"
+"PO-Revision-Date: 2026-11-08 00:45+0100\n"
+"Last-Translator: Yari Melzani\n"
+"Language-Team: Italian\n"
+"Language: it\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: package/contents/ui/configGeneral.qml:14
+msgid "sound-cast port:"
+msgstr "Porta di sound-cast:"
+
+#: package/contents/ui/configGeneral.qml:23
+msgid ""
+"The Chromecasts download the audio from this computer on this port, so it "
+"must be reachable from the local network: allow it in the firewall (for "
+"example: sudo ufw allow %1/tcp). It must match the port sound-cast uses (--"
+"port, default 3000)."
+msgstr ""
+"I Chromecast scaricano l'audio da questo computer su questa porta, quindi "
+"deve essere raggiungibile dalla rete locale: aprila nel firewall (ad "
+"esempio: sudo ufw allow %1/tcp). Deve coincidere con la porta usata da p-"
+"cast (--port, predefinita 3000)."
+
+#: package/contents/ui/configGeneral.qml:27
+msgid "systemd user unit:"
+msgstr "Unità utente systemd:"
+
+#: package/contents/ui/main.qml:127
+msgid "the stream could not start"
+msgstr "lo stream non è partito"
+
+#: package/contents/ui/main.qml:128
+msgid "connection lost"
+msgstr "connessione persa"
+
+#: package/contents/ui/main.qml:129
+msgid "the encoder stopped"
+msgstr "l'encoder si è fermato"
+
+#: package/contents/ui/main.qml:131
+msgid "no longer announced on the network"
+msgstr "non più annunciato sulla rete"
+
+#: package/contents/ui/main.qml:132
+msgid "no audio"
+msgstr "nessun audio"
+
+#: package/contents/ui/main.qml:133 package/contents/ui/main.qml:134
+msgid "not responding"
+msgstr "non risponde"
+
+#: package/contents/ui/main.qml:141 package/contents/ui/main.qml:164
+msgid "Ready"
+msgstr "Pronto"
+
+#: package/contents/ui/main.qml:142 package/contents/ui/main.qml:168
+msgid "Not reachable"
+msgstr "Non raggiungibile"
+
+#: package/contents/ui/main.qml:143
+msgid "Checking"
+msgstr "Verifica"
+
+#: package/contents/ui/main.qml:144
+msgid "Connecting"
+msgstr "Connessione"
+
+#: package/contents/ui/main.qml:145
+msgid "Starting encoder"
+msgstr "Avvio encoder"
+
+#: package/contents/ui/main.qml:146
+msgid "Preparing stream"
+msgstr "Preparazione stream"
+
+#: package/contents/ui/main.qml:147
+msgid "Closing other app"
+msgstr "Chiusura altra app"
+
+#: package/contents/ui/main.qml:148
+msgid "Waiting, in use"
+msgstr "In attesa, occupato"
+
+#: package/contents/ui/main.qml:149
+msgid "Loading on the Chromecast"
+msgstr "Caricamento sul Chromecast"
+
+#: package/contents/ui/main.qml:150 package/contents/ui/main.qml:178
+msgid "Playing"
+msgstr "In riproduzione"
+
+#: package/contents/ui/main.qml:151
+msgid "Paused"
+msgstr "In pausa"
+
+#: package/contents/ui/main.qml:152 package/contents/ui/main.qml:180
+msgid "Stopped on the Chromecast"
+msgstr "Fermo sul Chromecast"
+
+#: package/contents/ui/main.qml:153
+msgid "Buffering"
+msgstr "Buffering"
+
+#: package/contents/ui/main.qml:154
+msgid "Restarting"
+msgstr "Riavvio"
+
+#: package/contents/ui/main.qml:155
+msgid "No audio"
+msgstr "Nessun audio"
+
+#: package/contents/ui/main.qml:167
+msgid "Not reachable: %1, retrying in %2 s"
+msgstr "Non raggiungibile: %1, riprovo tra %2 s"
+
+#: package/contents/ui/main.qml:168
+msgid "Not reachable: %1"
+msgstr "Non raggiungibile: %1"
+
+#: package/contents/ui/main.qml:170
+msgid "Checking if it is back… %1 s"
+msgstr "Verifico se è tornato… %1 s"
+
+#: package/contents/ui/main.qml:170
+msgid "Checking connection… %1 s"
+msgstr "Verifica connessione… %1 s"
+
+#: package/contents/ui/main.qml:171
+msgid "Connecting… timeout in %1 s"
+msgstr "Connessione… timeout tra %1 s"
+
+#: package/contents/ui/main.qml:172
+msgid "Starting encoder…"
+msgstr "Avvio encoder…"
+
+#: package/contents/ui/main.qml:173
+msgid "Preparing stream… %1 s"
+msgstr "Preparazione stream… %1 s"
+
+#: package/contents/ui/main.qml:175
+msgid "other app"
+msgstr "altra app"
+
+#: package/contents/ui/main.qml:175
+msgid "Closing %1…"
+msgstr "Chiusura di %1…"
+
+#: package/contents/ui/main.qml:175
+msgid "Closing %1 on the Chromecast…"
+msgstr "Chiusura di %1 sul Chromecast…"
+
+#: package/contents/ui/main.qml:176
+msgid "another app"
+msgstr "un'altra app"
+
+#: package/contents/ui/main.qml:176
+msgid "%1 is playing, starts when it ends"
+msgstr "%1 è in riproduzione, parte quando finisce"
+
+#: package/contents/ui/main.qml:177
+msgid "Loading on the Chromecast… %1 s"
+msgstr "Caricamento sul Chromecast… %1 s"
+
+#: package/contents/ui/main.qml:179
+msgid "Paused on the Chromecast"
+msgstr "In pausa sul Chromecast"
+
+#: package/contents/ui/main.qml:181
+msgid "Buffering, restart in %1 s if it does not recover"
+msgstr "Buffering, riavvio tra %1 s se non si riprende"
+
+#: package/contents/ui/main.qml:183
+msgid "Restarting in %1 s (%2)"
+msgstr "Riavvio tra %1 s (%2)"
+
+#: package/contents/ui/main.qml:183
+msgid "Restarting…"
+msgstr "Riavvio…"
+
+#: package/contents/ui/main.qml:184
+msgid "No audio, stops in %1 s"
+msgstr "Nessun audio, si ferma tra %1 s"
+
+#: package/contents/ui/main.qml:206
+msgid "sound-cast started, %1 device found"
+msgid_plural "sound-cast started, %1 devices found"
+msgstr[0] "sound-cast avviato, %1 dispositivo trovato"
+msgstr[1] "sound-cast avviato, %1 dispositivi trovati"
+
+#: package/contents/ui/main.qml:207 package/contents/ui/main.qml:731
+msgid "Audio from %1"
+msgstr "Audio da %1"
+
+#: package/contents/ui/main.qml:207
+msgid "Audio arrived"
+msgstr "Audio in arrivo"
+
+#: package/contents/ui/main.qml:208
+msgid "Audio moved here from %1"
+msgstr "Audio spostato qui da %1"
+
+#: package/contents/ui/main.qml:209
+msgid "Connecting to the Chromecast"
+msgstr "Connessione al Chromecast"
+
+#: package/contents/ui/main.qml:210
+msgid "Closing %1 on the Chromecast"
+msgstr "Chiusura di %1 sul Chromecast"
+
+#: package/contents/ui/main.qml:211
+msgid "Stream sent to the Chromecast"
+msgstr "Stream inviato al Chromecast"
+
+#: package/contents/ui/main.qml:212
+msgid "%1 is playing, waiting for it to end"
+msgstr "%1 è in riproduzione, in attesa che finisca"
+
+#: package/contents/ui/main.qml:213
+msgid "The Chromecast is free, starting"
+msgstr "Il Chromecast è libero, avvio"
+
+#: package/contents/ui/main.qml:214
+msgid "Replacing %1"
+msgstr "Sostituisco %1"
+
+#: package/contents/ui/main.qml:215
+msgid "The Chromecast is buffering"
+msgstr "Il Chromecast è in buffering"
+
+#: package/contents/ui/main.qml:216
+msgid "Buffering for %1 s, restarting the stream"
+msgstr "Buffering da %1 s, riavvio dello stream"
+
+#: package/contents/ui/main.qml:217
+msgid "Connection to the Chromecast lost"
+msgstr "Connessione al Chromecast persa"
+
+#: package/contents/ui/main.qml:218
+msgid "The Chromecast could not load the stream (error %1)"
+msgstr "Il Chromecast non è riuscito a caricare lo stream (errore %1)"
+
+#: package/contents/ui/main.qml:219
+msgid "The Chromecast keeps buffering: unplug it and plug it back in"
+msgstr "Il Chromecast continua a bufferizzare: scollegalo e ricollegalo"
+
+#: package/contents/ui/main.qml:220
+msgid "The Chromecast did not respond within %1 s"
+msgstr "Il Chromecast non ha risposto entro %1 s"
+
+#: package/contents/ui/main.qml:221
+msgid "Device disappeared from the network"
+msgstr "Dispositivo sparito dalla rete"
+
+#: package/contents/ui/main.qml:222
+msgid "The encoder failed to start, sound-cast is shutting down"
+msgstr "L'encoder non parte, sound-cast si chiude"
+
+#: package/contents/ui/main.qml:223
+msgid "The encoder stopped (code %1), restarting"
+msgstr "L'encoder si è fermato (codice %1), riavvio"
+
+#: package/contents/ui/main.qml:224
+msgid "Could not start the stream: %1"
+msgstr "Impossibile avviare lo stream: %1"
+
+#: package/contents/ui/main.qml:225
+msgid "Could not start the stream"
+msgstr "Impossibile avviare lo stream"
+
+#: package/contents/ui/main.qml:226
+msgid "Stream stopped"
+msgstr "Stream fermato"
+
+#: package/contents/ui/main.qml:227
+msgid "Audio moved to another output"
+msgstr "Audio spostato su un'altra uscita"
+
+#: package/contents/ui/main.qml:228
+msgid "No audio for %1 s, stream stopped"
+msgstr "Nessun audio da %1 s, stream fermato"
+
+#: package/contents/ui/main.qml:229
+msgid "Audio sent to a device that is not reachable"
+msgstr "Audio inviato a un dispositivo non raggiungibile"
+
+#: package/contents/ui/main.qml:230
+msgid "Device no longer available: %1"
+msgstr "Dispositivo non più disponibile: %1"
+
+#: package/contents/ui/main.qml:231
+msgid "Device changed address, checking it"
+msgstr "Il dispositivo ha cambiato indirizzo, lo verifico"
+
+#: package/contents/ui/main.qml:232
+msgid "New device found"
+msgstr "Nuovo dispositivo trovato"
+
+#: package/contents/ui/main.qml:233
+msgid "Device available again"
+msgstr "Dispositivo di nuovo disponibile"
+
+#: package/contents/ui/main.qml:240
+msgid "Starting, looking for Chromecasts…"
+msgstr "Avvio, cerco i Chromecast…"
+
+#: package/contents/ui/main.qml:242
+msgid "Stopping…"
+msgstr "Arresto…"
+
+#: package/contents/ui/main.qml:244
+msgid "sound-cast stopped unexpectedly, restarting automatically"
+msgstr "sound-cast si è fermato, riavvio automatico"
+
+#: package/contents/ui/main.qml:246 package/contents/ui/main.qml:664
+msgid "sound-cast stopped with an error"
+msgstr "sound-cast si è fermato con un errore"
+
+#: package/contents/ui/main.qml:248
+msgid "Off"
+msgstr "Spento"
+
+#: package/contents/ui/main.qml:250 package/contents/ui/main.qml:668
+msgid "Connecting to sound-cast…"
+msgstr "Connessione a sound-cast…"
+
+#: package/contents/ui/main.qml:252 package/contents/ui/main.qml:1259
+msgid "%1: %2"
+msgstr "%1: %2"
+
+#: package/contents/ui/main.qml:254
+msgid "%1 selected, waiting for audio"
+msgstr "%1 selezionato, in attesa di audio"
+
+#: package/contents/ui/main.qml:256
+msgid "No Chromecast found on this network"
+msgstr "Nessun Chromecast trovato su questa rete"
+
+#: package/contents/ui/main.qml:256
+msgid "On, %1 device ready"
+msgid_plural "On, %1 devices ready"
+msgstr[0] "Acceso, %1 dispositivo pronto"
+msgstr[1] "Acceso, %1 dispositivi pronti"
+
+#: package/contents/ui/main.qml:452 package/contents/ui/main.qml:554
+msgid "Start sound-cast at login"
+msgstr "Avvia sound-cast all'accesso"
+
+#: package/contents/ui/main.qml:460 package/contents/ui/main.qml:562
+msgid "Open log"
+msgstr "Apri log"
+
+#: package/contents/ui/main.qml:539
+msgid "Stop sound-cast"
+msgstr "Ferma sound-cast"
+
+#: package/contents/ui/main.qml:539 package/contents/ui/main.qml:688
+msgid "Start sound-cast"
+msgstr "Avvia sound-cast"
+
+#: package/contents/ui/main.qml:548
+msgid "More options"
+msgstr "Altre opzioni"
+
+#: package/contents/ui/main.qml:568
+msgid "Configure widget…"
+msgstr "Configura widget…"
+
+#: package/contents/ui/main.qml:595
+msgid "Output"
+msgstr "Uscita"
+
+#: package/contents/ui/main.qml:610
+msgid "This computer"
+msgstr "Questo computer"
+
+#: package/contents/ui/main.qml:613 package/contents/ui/main.qml:1046
+msgid "Switching…"
+msgstr "Cambio in corso…"
+
+#: package/contents/ui/main.qml:613
+msgid "Audio plays here"
+msgstr "L'audio suona qui"
+
+#: package/contents/ui/main.qml:615
+msgid "Play the audio on this computer"
+msgstr "Riproduci l'audio su questo computer"
+
+#: package/contents/ui/main.qml:662
+msgid "sound-cast stopped unexpectedly"
+msgstr "sound-cast si è fermato inaspettatamente"
+
+#: package/contents/ui/main.qml:666
+msgid "Starting sound-cast…"
+msgstr "Avvio di sound-cast…"
+
+#: package/contents/ui/main.qml:666
+msgid "sound-cast is off"
+msgstr "sound-cast è spento"
+
+#: package/contents/ui/main.qml:668
+msgid "Looking for Chromecasts…"
+msgstr "Cerco i Chromecast…"
+
+#: package/contents/ui/main.qml:669
+msgid "No Chromecast found"
+msgstr "Nessun Chromecast trovato"
+
+#: package/contents/ui/main.qml:673
+msgid "systemd restarts it in a few seconds (restart %1)."
+msgid_plural "systemd restarts it in a few seconds (restart %1)."
+msgstr[0] "systemd lo riavvia tra pochi secondi (riavvio %1)."
+msgstr[1] "systemd lo riavvia tra pochi secondi (riavvio %1)."
+
+#: package/contents/ui/main.qml:675
+msgid "See the log with: journalctl --user -u %1"
+msgstr "Vedi il log con: journalctl --user -u %1"
+
+#: package/contents/ui/main.qml:677
+msgid "Turn it on to use the Chromecasts on this network as audio outputs."
+msgstr "Accendilo per usare i Chromecast di questa rete come uscite audio."
+
+#: package/contents/ui/main.qml:681
+msgid ""
+"If this takes long, sound-cast may be using another port (see the widget "
+"settings)."
+msgstr ""
+"Se ci mette molto, sound-cast potrebbe usare un'altra porta (vedi le "
+"impostazioni del widget)."
+
+#: package/contents/ui/main.qml:682
+msgid ""
+"sound-cast keeps looking. The PC must be on the same network as the "
+"Chromecasts."
+msgstr ""
+"sound-cast continua a cercare. Il PC deve essere sulla stessa rete dei "
+"Chromecast."
+
+#: package/contents/ui/main.qml:688
+msgid "Try again"
+msgstr "Riprova"
+
+#: package/contents/ui/main.qml:739
+msgid "Back to PC"
+msgstr "Torna al PC"
+
+#: package/contents/ui/main.qml:742
+msgid "Play the audio on this computer again"
+msgstr "Riporta l'audio su questo computer"
+
+#: package/contents/ui/main.qml:783
+msgid "The Chromecast stopped fetching audio %1 s ago"
+msgstr "Il Chromecast non scarica audio da %1 s"
+
+#: package/contents/ui/main.qml:784
+msgid "Audio flowing to the Chromecast"
+msgstr "L'audio arriva al Chromecast"
+
+#: package/contents/ui/main.qml:800
+msgid ""
+"Buffered %1 times in the last minute: the Chromecast seems stuck, unplug it "
+"and plug it back in"
+msgstr ""
+"Bufferizzato %1 volte nell'ultimo minuto: il Chromecast sembra bloccato, "
+"scollegalo e ricollegalo"
+
+#: package/contents/ui/main.qml:801
+msgid "Buffered %1 time in the last minute: weak Wi-Fi signal?"
+msgid_plural "Buffered %1 times in the last minute: weak Wi-Fi signal?"
+msgstr[0] "%1 buffering nell'ultimo minuto: Wi-Fi debole?"
+msgstr[1] "%1 buffering nell'ultimo minuto: Wi-Fi debole?"
+
+#: package/contents/ui/main.qml:811
+msgid "Connect"
+msgstr "Connessione"
+
+#: package/contents/ui/main.qml:811
+msgid "Encoder"
+msgstr "Encoder"
+
+#: package/contents/ui/main.qml:811
+msgid "Prepare"
+msgstr "Preparazione"
+
+#: package/contents/ui/main.qml:811
+msgid "Load"
+msgstr "Caricamento"
+
+#: package/contents/ui/main.qml:811
+msgid "Play"
+msgstr "Riproduzione"
+
+#: package/contents/ui/main.qml:1052
+msgid "In use: %1"
+msgstr "In uso: %1"
+
+#: package/contents/ui/main.qml:1054
+msgid "Selected, starts when audio plays"
+msgstr "Selezionato, parte quando c'è audio"
+
+#: package/contents/ui/main.qml:1061
+msgid "Play the audio on %1"
+msgstr "Riproduci l'audio su %1"
+
+#: package/contents/ui/main.qml:1079
+msgid "the other app"
+msgstr "l'altra app"
+
+#: package/contents/ui/main.qml:1079
+msgid "Stop %1?"
+msgstr "Fermare %1?"
+
+#: package/contents/ui/main.qml:1084
+msgid "Interrupt"
+msgstr "Interrompi"
+
+#: package/contents/ui/main.qml:1090
+msgid "Wait"
+msgstr "Attendi"
+
+#: package/contents/ui/main.qml:1096
+msgid "Cancel"
+msgstr "Annulla"
+
+#: package/contents/ui/main.qml:1133
+msgid "Show fewer events"
+msgstr "Mostra meno eventi"
+
+#: package/contents/ui/main.qml:1133
+msgid "Show all events"
+msgstr "Mostra tutti gli eventi"
+
+#: package/contents/ui/main.qml:1168
+msgid "Recent events"
+msgstr "Eventi recenti"

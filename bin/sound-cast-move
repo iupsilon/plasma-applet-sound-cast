@@ -1,0 +1,85 @@
+#!/bin/bash
+# Move the audio to a sound-cast Chromecast sink, or back to the local output.
+#
+#   sound-cast-move SINK     make SINK the default output and move every stream to it
+#   sound-cast-move --local  move the streams that play on a Chromecast back to a local sink
+#   sound-cast-move --local-sink   print the local sink that --local would use
+set -euo pipefail
+
+local_sinks() {
+    pactl list short sinks | awk '{print $2}' | grep -v '^sound-cast\.' || true
+}
+
+local_sink() {
+    local default best
+    default=$(pactl get-default-sink 2>/dev/null || true)
+    if [[ -n "$default" && "$default" != sound-cast.* ]]; then
+        echo "$default"
+        return
+    fi
+    # The local sink WirePlumber would pick: active port not unplugged, highest priority.
+    # (An HDMI output with no screen attached is "not available": WirePlumber refuses it as
+    # default and falls back to a Chromecast sink, so the audio would never come back.)
+    best=$(pactl -f json list sinks 2>/dev/null | python3 -c '
+import json, sys
+best = None
+for s in json.load(sys.stdin):
+    if s["name"].startswith("sound-cast."):
+        continue
+    port = s.get("active_port")
+    if any(p["name"] == port and p.get("availability") == "not available" for p in s.get("ports", [])):
+        continue
+    prio = int(s.get("properties", {}).get("priority.session") or 0)
+    if best is None or prio > best[0]:
+        best = (prio, s["name"])
+if best:
+    print(best[1])
+' 2>/dev/null || true)
+    if [[ -n "$best" ]]; then
+        echo "$best"
+        return
+    fi
+    local_sinks | head -1
+}
+
+# "INDEX SINK_NAME" for every sink-input
+sink_inputs() {
+    local -A names
+    local idx name
+    while read -r idx name _; do
+        names[$idx]=$name
+    done < <(pactl list short sinks)
+    while read -r idx sink _; do
+        echo "$idx ${names[$sink]:-}"
+    done < <(pactl list short sink-inputs)
+}
+
+case "${1:-}" in
+    --local-sink)
+        local_sink
+        ;;
+    --local)
+        target=$(local_sink)
+        [[ -n "$target" ]] || { echo "error: no local sink found" >&2; exit 1; }
+        pactl set-default-sink "$target"
+        while read -r idx sink; do
+            [[ "$sink" == sound-cast.* ]] && pactl move-sink-input "$idx" "$target"
+        done < <(sink_inputs)
+        echo "Audio -> $target"
+        ;;
+    ""|-h|--help)
+        sed -n '2,7p' "$0" | sed 's/^# \{0,1\}//'
+        [[ -n "${1:-}" ]] || exit 2
+        ;;
+    *)
+        target=$1
+        pactl list short sinks | awk '{print $2}' | grep -qxF "$target" \
+            || { echo "error: no sink named '$target'" >&2; exit 1; }
+        pactl set-default-sink "$target"
+        while read -r idx sink; do
+            [[ "$sink" != "$target" ]] && pactl move-sink-input "$idx" "$target"
+        done < <(sink_inputs)
+        echo "Audio -> $target"
+        ;;
+esac
+exit 0

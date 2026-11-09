@@ -1,0 +1,25 @@
+pkgname=plasma6-applets-sound-cast
+pkgver=1.0.r0.g0000000
+pkgrel=1
+pkgdesc="Plasma 6 widget for sound-cast: status, device switching and event log"
+arch=(any)
+url="https://github.com/iupsilon/plasma-applet-sound-cast"
+license=(GPL-3.0-or-later)
+# sound-cast has no package yet: install it by hand. It must provide the status API.
+depends=(python plasma-workspace plasma-pa plasma5support qt6-websockets libpulse systemd)
+makedepends=(git gettext make)
+source=("plasma-applet-sound-cast::git+file:///home/yari/Repository/plasma-applet-sound-cast")
+sha256sums=(SKIP)
+
+pkgver() {
+  cd plasma-applet-sound-cast
+  local v
+  v=$(sed -n 's/.*"Version": "\(.*\)".*/\1/p' package/metadata.json)
+  printf '%s.r%s.g%s' "$v" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+}
+
+package() {
+  cd plasma-applet-sound-cast
+  make install DESTDIR="$pkgdir" PREFIX=/usr
+  install -Dm644 README.md "$pkgdir/usr/share/doc/$pkgname/README.md"
+}

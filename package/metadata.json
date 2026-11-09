@@ -1,0 +1,21 @@
+{
+    "KPackageStructure": "Plasma/Applet",
+    "KPlugin": {
+        "Authors": [
+            {
+                "Name": "Yari Melzani"
+            }
+        ],
+        "Category": "Multimedia",
+        "Description": "Status and control of sound-cast: PipeWire audio to Chromecast",
+        "Description[it]": "Stato e controllo di sound-cast: audio PipeWire verso Chromecast",
+        "Icon": "sound-cast-symbolic",
+        "Id": "org.soundcast.status",
+        "License": "GPL-3.0-or-later",
+        "Name": "sound-cast",
+        "Version": "1.0"
+    },
+    "X-Plasma-API-Minimum-Version": "6.0",
+    "X-Plasma-NotificationArea": "true",
+    "X-Plasma-NotificationAreaCategory": "Hardware"
+}
