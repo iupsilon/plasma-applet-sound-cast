@@ -25,7 +25,7 @@ install:
 	find $(PLASMOID) -type d -exec chmod 755 {} + -o -type f -exec chmod 644 {} +
 	install -Dm644 package/contents/icons/sound-cast-symbolic.svg \
 		$(DESTDIR)$(PREFIX)/share/icons/hicolor/scalable/apps/sound-cast-symbolic.svg
-	install -Dm755 bin/sound-cast-move $(DESTDIR)$(PREFIX)/bin/sound-cast-move
+	install -Dm755 package/contents/code/sound-cast-move $(DESTDIR)$(PREFIX)/bin/sound-cast-move
 	for lang in $(LANGS); do \
 		install -d $(DESTDIR)$(PREFIX)/share/locale/$$lang/LC_MESSAGES; \
 		msgfmt -o $(DESTDIR)$(PREFIX)/share/locale/$$lang/LC_MESSAGES/$(DOMAIN).mo po/$$lang.po; \

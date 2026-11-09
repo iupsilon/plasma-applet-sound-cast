@@ -261,11 +261,15 @@ PlasmoidItem {
         exec.run(`systemctl --user ${on ? "enable" : "disable"} ${unit}`, () => refreshUnit());
     }
 
+    // The helper ships inside the widget: plasmashell's PATH may lack ~/.local/bin, and a
+    // user install (make test-install) has no /usr/bin copy.
+    readonly property string moveHelper: decodeURIComponent(Qt.resolvedUrl("../code/sound-cast-move").toString().replace("file://", ""))
+
     function moveAudio(sinkName) {
         // sink names are [a-z0-9_.] (sound-cast makes them), safe for the shell
         pendingSink = sinkName || "local";
         pendingSinkTimeout.restart();
-        exec.run(sinkName ? `sound-cast-move ${sinkName}` : "sound-cast-move --local", () => {});
+        exec.run(`bash '${moveHelper}' ${sinkName || "--local"}`, () => {});
     }
 
     // Ask sound-cast to take a device back from the app that took it.
