@@ -8,8 +8,11 @@ PipeWire audio to Chromecast devices.
   Chromecast volume, buffering, and whether the Chromecast fetches the audio.
 - Lists the outputs (this computer and every Chromecast) with their state; one click
   moves the audio there.
+- A room the audio left keeps playing silence for 20 s: the list shows its countdown,
+  a click brings the audio back before it stops, the stop button ends it at once.
 - Takes a Chromecast back when another app (for example YouTube) took it.
-- Keeps a log of recent events (devices lost and found, restarts, errors).
+- Keeps a log of recent events for troubleshooting: one line with the latest, a click
+  opens the list.
 
 The widget reads sound-cast's state from its D-Bus object (`org.soundcast.Daemon` on the
 session bus, interface `org.soundcast.Daemon1`), the service state from systemd and the

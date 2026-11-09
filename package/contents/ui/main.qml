@@ -48,7 +48,6 @@ PlasmoidItem {
     property real now: Date.now() / 1000
     property bool showAllEvents: false
     property string confirmSink: ""         // busy device waiting for "interrupt?" confirmation
-    readonly property int collapsedEvents: 3
 
     readonly property bool serviceOn: unitActive === "active" || unitActive === "activating" || unitActive === "reloading"
     readonly property bool autoRestarting: unitActive === "activating" && unitSub === "auto-restart"
@@ -57,6 +56,9 @@ PlasmoidItem {
     // Rooms with a Cast session open or being retried; several can play at once.
     readonly property var activeDevices: devices.filter(d => isActive(d))
     readonly property var activeDevice: activeDevices.length > 0 ? activeDevices[0] : null
+    // Rooms that get a card: those with audio, plus the selected output even while it is
+    // silent. A room the audio left only waits out its grace period: it stays in the list.
+    readonly property var cardDevices: activeDevices.filter(d => hasCard(d))
     // A sound-cast device chosen as output (by the widget or the desktop mixer); it streams
     // only while something plays.
     readonly property var selectedDevice: defaultSink.startsWith("sound-cast.") ? (devices.find(d => d.sink_name === defaultSink) || null) : null
@@ -104,6 +106,10 @@ PlasmoidItem {
         if (d.lost_until === null || d.phase !== "ready")
             return d;
         return Object.assign({}, d, { phase: "unavailable", reason: "lost", since: d.since, deadline: d.lost_until });
+    }
+
+    function hasCard(d) {
+        return isActive(d) && (d.phase !== "lingering" || d.sink_name === defaultSink);
     }
 
     function isActive(d) {
@@ -207,9 +213,10 @@ PlasmoidItem {
         case "idle_stop": return i18n("No audio for %1 s, stopped", a.seconds);
         case "yielded": return a.app ? i18n("%1 took the Chromecast", a.app) : i18n("Another app took the Chromecast");
         case "resumed": return i18n("Taken back");
+        case "stopped": return i18n("Stopped");
         case "error": return i18n("%1, retrying in %2 s", a.error, a.retry);
         case "not_fetched": return i18n("The Chromecast did not fetch the audio: is port %1/tcp open in the firewall?", a.port);
-        default: return ev.code;
+        default: return ev.code || "";
         }
     }
 
@@ -226,10 +233,11 @@ PlasmoidItem {
             return i18n("Off");
         if (!connected)
             return i18n("Connecting to sound-cast…");
-        if (activeDevices.length > 1)
-            return i18np("Playing in %1 room", "Playing in %1 rooms", activeDevices.length);
-        if (activeDevice)
-            return i18n("%1: %2", activeDevice.friendly_name, phaseLabel(activeDevice.phase));
+        // A room the audio left only waits out its grace period: it does not count.
+        if (cardDevices.length > 1)
+            return i18np("Playing in %1 room", "Playing in %1 rooms", cardDevices.length);
+        if (cardDevices.length === 1)
+            return i18n("%1: %2", cardDevices[0].friendly_name, phaseLabel(cardDevices[0].phase));
         if (selectedDevice)
             return i18n("%1 selected, waiting for audio", selectedDevice.friendly_name);
         const n = devices.filter(d => d.phase !== "unavailable").length;
@@ -272,15 +280,24 @@ PlasmoidItem {
         exec.run(`bash '${moveHelper}' ${sinkName || "--local"}`, () => {});
     }
 
-    // Ask sound-cast to take a device back from the app that took it.
-    function resume(sinkName) {
+    function callDaemon(member, sinkName) {
         DBus.SessionBus.asyncCall({
             service: "org.soundcast.Daemon",
             path: "/org/soundcast/Daemon",
             iface: "org.soundcast.Daemon1",
-            member: "Resume",
+            member: member,
             arguments: [new DBus.string(sinkName)],
         });
+    }
+
+    // Ask sound-cast to take a device back from the app that took it.
+    function resume(sinkName) {
+        callDaemon("Resume", sinkName);
+    }
+
+    // Ask sound-cast to end now a session that only waits out its grace period.
+    function stopRoom(sinkName) {
+        callDaemon("Stop", sinkName);
     }
 
     // A click on a device: confirm first when another app has it.
@@ -546,7 +563,7 @@ PlasmoidItem {
             }
 
             Repeater {
-                model: root.activeDevices
+                model: root.cardDevices
                 delegate: StreamCard {
                     required property var modelData
                     Layout.fillWidth: true
@@ -715,6 +732,8 @@ PlasmoidItem {
             PipelineStepper {
                 Layout.fillWidth: true
                 Layout.topMargin: Kirigami.Units.smallSpacing
+                // Only while the session is being set up; a playing room stays compact.
+                visible: card.dev !== null && ["connecting", "launching", "loading", "restarting"].includes(card.dev.phase)
                 phase: card.dev ? card.dev.phase : ""
             }
 
@@ -734,7 +753,7 @@ PlasmoidItem {
 
             RowLayout {
                 Layout.fillWidth: true
-                visible: card.dev !== null && ["loading", "playing", "buffering", "paused", "lingering"].includes(card.dev.phase)
+                visible: card.dev !== null && card.dev.phase === "loading"
                 // While loading, no listener means the Chromecast cannot reach the stream port.
                 readonly property bool unreached: card.dev !== null && card.dev.listeners === 0 && card.dev.phase === "loading"
                     && root.serverNow() - card.dev.since > 5
@@ -749,7 +768,7 @@ PlasmoidItem {
                     font: Kirigami.Theme.smallFont
                     text: parent.unreached
                         ? i18n("The Chromecast has not fetched the audio yet: is port %1/tcp open in the firewall?", root.port)
-                        : parent.flowing ? i18n("Audio flowing to the Chromecast")
+                        : parent.flowing ? i18n("The Chromecast is fetching the audio")
                         : i18n("Waiting for the Chromecast to fetch the audio")
                     color: parent.unreached ? Kirigami.Theme.neutralTextColor : Kirigami.Theme.textColor
                     opacity: parent.unreached ? 1 : 0.7
@@ -898,7 +917,10 @@ PlasmoidItem {
         property bool selectable: true
         property real timerValue: -1      // 0..1 shows a timer bar
         property string tooltip
+        property string actionIcon        // a small button at the end of the row, when set
+        property string actionText
         signal activated()
+        signal actionTriggered()
 
         implicitHeight: rowContent.implicitHeight + 2 * Kirigami.Units.smallSpacing
         opacity: selectable || selected ? 1 : 0.6
@@ -980,6 +1002,15 @@ PlasmoidItem {
                 Layout.preferredWidth: Kirigami.Units.iconSizes.smallMedium
                 Layout.preferredHeight: Kirigami.Units.iconSizes.smallMedium
             }
+            PlasmaComponents3.ToolButton {
+                visible: orow.actionIcon !== ""
+                icon.name: orow.actionIcon
+                text: orow.actionText
+                display: PlasmaComponents3.AbstractButton.IconOnly
+                onClicked: orow.actionTriggered()
+                PlasmaComponents3.ToolTip.text: text
+                PlasmaComponents3.ToolTip.visible: hovered
+            }
             Kirigami.Icon {
                 visible: orow.selected && !orow.pending
                 source: "checkmark-symbolic"
@@ -1005,12 +1036,16 @@ PlasmoidItem {
         iconColor: isActive || (device.phase !== "ready" && device.phase !== "unavailable") ? root.phaseColor(device.phase)
             : device.phase === "unavailable" ? Kirigami.Theme.negativeTextColor : Kirigami.Theme.textColor
         title: device.friendly_name
-        selected: isDefault || isActive
+        // The audio left this room: it plays silence until the grace period ends.
+        readonly property bool leaving: device.phase === "lingering" && !isDefault
+        selected: isDefault || (isActive && !leaving)
         pending: root.isPendingTarget(device.sink_name)
         selectable: device.phase !== "unavailable"
         subtitle: {
             if (pending)
                 return i18n("Switching…");
+            if (leaving)
+                return i18n("No audio, stops in %1 s · click to play here again", root.secondsLeft(device));
             if (isActive)
                 return root.transitional(device.phase) ? root.phaseDetail(device) : root.phaseLabel(device.phase);
             if (device.phase !== "ready")
@@ -1021,9 +1056,12 @@ PlasmoidItem {
         }
         subtitleColor: pending ? Kirigami.Theme.highlightColor
             : isDefault && device.phase === "ready" ? Kirigami.Theme.highlightColor : root.phaseColor(device.phase)
-        timerValue: !isActive && device.deadline !== null ? root.timerFraction(device) : -1
+        timerValue: !root.hasCard(device) && device.deadline !== null ? root.timerFraction(device) : -1
         tooltip: i18n("Play the audio on %1", device.friendly_name)
+        actionIcon: leaving ? "media-playback-stop-symbolic" : ""
+        actionText: i18n("Stop now")
         onActivated: root.chooseDevice(device)
+        onActionTriggered: root.stopRoom(device.sink_name)
     }
 
     // Inline confirmation under a device another app took.
@@ -1056,12 +1094,13 @@ PlasmoidItem {
         }
     }
 
-    // Event log, pinned to the bottom of the popup. The header (grab handle, title, count,
-    // chevron) opens and closes it; open, it fills the space of the output list.
+    // Event log, pinned to the bottom of the popup. Closed it is one line with the latest
+    // event; a click opens it in the place of the output list, another closes it.
     component EventsAccordion: Rectangle {
         id: acc
         readonly property bool open: root.showAllEvents
-        readonly property bool canOpen: root.events.length > root.collapsedEvents
+        // Closed it is one line with the latest event; the events only serve troubleshooting.
+        readonly property bool canOpen: root.events.length > 0
         implicitHeight: accColumn.implicitHeight + 2 * Kirigami.Units.smallSpacing
         radius: Kirigami.Units.cornerRadius * 2
         color: Qt.alpha(Kirigami.Theme.textColor, 0.04)
@@ -1086,7 +1125,7 @@ PlasmoidItem {
                 Keys.onSpacePressed: root.showAllEvents = !root.showAllEvents
                 Keys.onReturnPressed: root.showAllEvents = !root.showAllEvents
                 Accessible.role: Accessible.Button
-                Accessible.name: acc.open ? i18n("Show fewer events") : i18n("Show all events")
+                Accessible.name: acc.open ? i18n("Hide the events") : i18n("Show all events")
                 PlasmaComponents3.ToolTip.visible: containsMouse && acc.canOpen
                 PlasmaComponents3.ToolTip.text: Accessible.name
                 PlasmaComponents3.ToolTip.delay: Kirigami.Units.toolTipDelay
@@ -1105,11 +1144,11 @@ PlasmoidItem {
                     anchors.right: parent.right
                     spacing: 0
 
-                    // Grab handle: hints that the panel slides up and down.
+                    // Grab handle: hints that the open panel slides back down.
                     Rectangle {
                         Layout.alignment: Qt.AlignHCenter
                         Layout.topMargin: Kirigami.Units.smallSpacing / 2
-                        visible: acc.canOpen
+                        visible: acc.open
                         implicitWidth: Kirigami.Units.gridUnit * 2
                         implicitHeight: 3
                         radius: height / 2
@@ -1121,6 +1160,7 @@ PlasmoidItem {
                         Layout.margins: Kirigami.Units.smallSpacing
                         spacing: Kirigami.Units.smallSpacing
                         PlasmaComponents3.Label {
+                            visible: acc.open
                             text: i18n("Recent events")
                             font.pointSize: Kirigami.Theme.smallFont.pointSize
                             font.weight: Font.DemiBold
@@ -1130,7 +1170,7 @@ PlasmoidItem {
                         }
                         // Count badge
                         Rectangle {
-                            visible: acc.canOpen
+                            visible: acc.open
                             implicitWidth: Math.max(implicitHeight, countLabel.implicitWidth + Kirigami.Units.smallSpacing * 2)
                             implicitHeight: countLabel.implicitHeight
                             radius: height / 2
@@ -1143,7 +1183,14 @@ PlasmoidItem {
                                 opacity: 0.8
                             }
                         }
+                        EventRow {
+                            visible: !acc.open && root.events.length > 0
+                            Layout.fillWidth: true
+                            singleLine: true
+                            event: root.events.length > 0 ? root.events[root.events.length - 1] : ({})
+                        }
                         Item {
+                            visible: acc.open
                             Layout.fillWidth: true
                         }
                         Kirigami.Icon {
@@ -1163,6 +1210,7 @@ PlasmoidItem {
 
             PlasmaComponents3.ScrollView {
                 id: eventScroll
+                visible: acc.open
                 Layout.fillWidth: true
                 Layout.fillHeight: acc.open
                 Layout.preferredHeight: acc.open ? -1 : eventColumn.implicitHeight
@@ -1176,7 +1224,7 @@ PlasmoidItem {
                     width: eventScroll.availableWidth
                     spacing: 0
                     Repeater {
-                        model: root.connected ? root.events.slice(acc.open ? -50 : -root.collapsedEvents).reverse() : []
+                        model: root.connected && acc.open ? root.events.slice(-50).reverse() : []
                         delegate: EventRow {
                             required property var modelData
                             Layout.fillWidth: true
@@ -1192,6 +1240,7 @@ PlasmoidItem {
     component EventRow: RowLayout {
         id: evRow
         property var event
+        property bool singleLine: false
         spacing: Kirigami.Units.smallSpacing
 
         Kirigami.Icon {
@@ -1215,7 +1264,8 @@ PlasmoidItem {
             text: evRow.event.sink_name ? i18n("%1: %2", root.deviceName(evRow.event.sink_name), root.eventText(evRow.event))
                 : root.eventText(evRow.event)
             font: Kirigami.Theme.smallFont
-            wrapMode: Text.Wrap
+            wrapMode: evRow.singleLine ? Text.NoWrap : Text.Wrap
+            elide: evRow.singleLine ? Text.ElideRight : Text.ElideNone
         }
     }
 }
