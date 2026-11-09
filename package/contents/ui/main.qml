@@ -391,7 +391,7 @@ PlasmoidItem {
         onTriggered: root.now = Date.now() / 1000
     }
 
-    onExpandedChanged: if (!expanded) {
+    onExpandedChanged: if (!root.expanded) {
         showAllEvents = false;
         confirmSink = "";
     }
