@@ -6,7 +6,7 @@ arch=(any)
 url="https://github.com/iupsilon/plasma-applet-sound-cast"
 license=(GPL-3.0-or-later)
 # sound-cast has no package yet: install it by hand. It must provide the status API.
-depends=(python plasma-workspace plasma-pa plasma5support qt6-websockets libpulse systemd)
+depends=(python plasma-workspace plasma-pa plasma5support libpulse systemd)
 makedepends=(git gettext make)
 source=("plasma-applet-sound-cast::git+file:///home/yari/Repository/plasma-applet-sound-cast")
 sha256sums=(SKIP)

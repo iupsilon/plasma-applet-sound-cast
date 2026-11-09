@@ -4,9 +4,6 @@
       xsi:schemaLocation="http://www.kde.org/standards/kcfg/1.0 http://www.kde.org/standards/kcfg/1.0/kcfg.xsd">
   <kcfgfile name=""/>
   <group name="General">
-    <entry name="port" type="Int">
-      <default>3000</default>
-    </entry>
     <entry name="unitName" type="String">
       <default>sound-cast</default>
     </entry>

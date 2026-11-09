@@ -2,14 +2,13 @@
  * sound-cast status widget.
  *
  * Service state comes from systemd over D-Bus (property change signals), the default
- * output from the Plasma audio module, the rest from sound-cast's /events WebSocket:
- * device phases with their timers, the active stream and an event log.
- * Nothing is polled: shell commands run only for user actions.
+ * output from the Plasma audio module, the rest from sound-cast's own D-Bus object
+ * (org.soundcast.Daemon1: Status and Events properties): the rooms with their phases
+ * and timers, and an event log. Nothing is polled: shell commands run only for user
+ * actions.
  */
-import QtCore
 import QtQuick
 import QtQuick.Layouts
-import QtWebSockets
 import org.kde.plasma.plasmoid
 import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.components as PlasmaComponents3
@@ -25,7 +24,8 @@ PlasmoidItem {
     // -- state -------------------------------------------------------------------------
 
     readonly property string unit: Plasmoid.configuration.unitName || "sound-cast"
-    readonly property int port: Plasmoid.configuration.port || 3000
+    // The TCP port the Chromecasts fetch the audio from, as sound-cast reports it.
+    readonly property int port: pstatus ? pstatus.port : 3000
 
     readonly property string unitFile: unit.includes(".") ? unit : unit + ".service"
     // active, inactive, activating, deactivating, failed
@@ -41,29 +41,30 @@ PlasmoidItem {
     property string pendingSink: ""         // output chosen in the widget, until it is the default
     readonly property string castIcon: Qt.resolvedUrl("../icons/sound-cast-symbolic.svg")
 
-    property var pstatus: null              // last "status" message from sound-cast
-    property var events: []
+    // sound-cast's Status and Events properties, parsed; null while it does not answer
+    readonly property var pstatus: daemonWatcher.registered ? parseJson(propString(daemonProps.properties.Status)) : null
+    readonly property var events: daemonWatcher.registered ? (parseJson(propString(daemonProps.properties.Events)) || []) : []
     property real clockOffset: 0            // server time - local time
     property real now: Date.now() / 1000
     property bool showAllEvents: false
     property string confirmSink: ""         // busy device waiting for "interrupt?" confirmation
     readonly property int collapsedEvents: 3
-    readonly property string logFile: `${StandardPaths.writableLocation(StandardPaths.GenericStateLocation)}/${unit}/sound-cast.log`.replace("file://", "")
 
     readonly property bool serviceOn: unitActive === "active" || unitActive === "activating" || unitActive === "reloading"
     readonly property bool autoRestarting: unitActive === "activating" && unitSub === "auto-restart"
-    readonly property bool connected: socket.status === WebSocket.Open && pstatus !== null
-    readonly property var devices: connected ? sortedDevices(pstatus.devices) : []
-    readonly property var activeDevice: {
-        if (!connected || !pstatus.stream.sink_name)
-            return null;
-        return devices.find(d => d.sink_name === pstatus.stream.sink_name) || null;
-    }
+    readonly property bool connected: pstatus !== null
+    readonly property var devices: connected ? sortedDevices(pstatus.devices.map(normalized)) : []
+    // Rooms with a Cast session open or being retried; several can play at once.
+    readonly property var activeDevices: devices.filter(d => isActive(d))
+    readonly property var activeDevice: activeDevices.length > 0 ? activeDevices[0] : null
     // A sound-cast device chosen as output (by the widget or the desktop mixer); it streams
     // only while something plays.
     readonly property var selectedDevice: defaultSink.startsWith("sound-cast.") ? (devices.find(d => d.sink_name === defaultSink) || null) : null
     readonly property bool busy: pendingAction !== "" || pendingSink !== "" || unitActive === "activating" || unitActive === "deactivating"
-        || (activeDevice !== null && transitional(activeDevice.phase))
+        || activeDevices.some(d => transitional(d.phase))
+
+    onPstatusChanged: if (pstatus)
+        clockOffset = pstatus.now - Date.now() / 1000
 
     // -- helpers -----------------------------------------------------------------------
 
@@ -88,16 +89,37 @@ PlasmoidItem {
         serviceProps.updateAll();
     }
 
+    function parseJson(text) {
+        if (!text)
+            return null;
+        try {
+            return JSON.parse(text);
+        } catch (e) {
+            return null;
+        }
+    }
+
+    // A room whose device left the network shows as unavailable until its sink goes.
+    function normalized(d) {
+        if (d.lost_until === null || d.phase !== "ready")
+            return d;
+        return Object.assign({}, d, { phase: "unavailable", reason: "lost", since: d.since, deadline: d.lost_until });
+    }
+
+    function isActive(d) {
+        return !["ready", "unavailable", "busy"].includes(d.phase);
+    }
+
     function serverNow() {
         return now + clockOffset;
     }
 
     function transitional(phase) {
-        return ["connecting", "encoder", "subscribing", "quitting_app", "busy", "loading", "buffering", "restarting", "lingering", "checking"].includes(phase);
+        return ["connecting", "launching", "loading", "buffering", "restarting", "lingering"].includes(phase);
     }
 
     function sortedDevices(list) {
-        const rank = d => d.sink_name === (pstatus && pstatus.stream.sink_name) ? 0 : d.phase === "unavailable" ? 2 : 1;
+        const rank = d => isActive(d) ? 0 : d.phase === "unavailable" ? 2 : 1;
         return list.slice().sort((a, b) => rank(a) - rank(b) || a.friendly_name.localeCompare(b.friendly_name));
     }
 
@@ -117,42 +139,25 @@ PlasmoidItem {
     }
 
     function timerFraction(dev) {
+        // Phases that end by themselves carry a deadline; "since" is when they began.
         if (!dev.deadline || dev.deadline <= dev.since)
             return 0;
         return Math.min(1, Math.max(0, (dev.deadline - serverNow()) / (dev.deadline - dev.since)));
-    }
-
-    function reasonLabel(reason) {
-        switch (reason) {
-        case "activation failed": return i18n("the stream could not start");
-        case "connection lost": return i18n("connection lost");
-        case "encoder exited": return i18n("the encoder stopped");
-        case "gone from mDNS":
-        case "removed from mDNS": return i18n("no longer announced on the network");
-        case "no audio": return i18n("no audio");
-        case "not reachable": return i18n("not responding");
-        case "health check failed": return i18n("not responding");
-        default: return reason || "";
-        }
     }
 
     function phaseLabel(phase) {
         switch (phase) {
         case "ready": return i18n("Ready");
         case "unavailable": return i18n("Not reachable");
-        case "checking": return i18n("Checking");
         case "connecting": return i18n("Connecting");
-        case "encoder": return i18n("Starting encoder");
-        case "subscribing": return i18n("Preparing stream");
-        case "quitting_app": return i18n("Closing other app");
-        case "busy": return i18n("Waiting, in use");
+        case "launching": return i18n("Starting the receiver");
         case "loading": return i18n("Loading on the Chromecast");
         case "playing": return i18n("Playing");
-        case "paused": return i18n("Paused");
-        case "idle": return i18n("Stopped on the Chromecast");
         case "buffering": return i18n("Buffering");
-        case "restarting": return i18n("Restarting");
+        case "paused": return i18n("Paused");
         case "lingering": return i18n("No audio");
+        case "restarting": return i18n("Restarting");
+        case "busy": return i18n("In use by another app");
         default: return phase;
         }
     }
@@ -161,27 +166,16 @@ PlasmoidItem {
     function phaseDetail(dev) {
         const left = secondsLeft(dev);
         switch (dev.phase) {
-        case "ready": return i18n("Ready");
-        case "unavailable":
-            if (dev.deadline && left > 0)
-                return i18n("Not reachable: %1, retrying in %2 s", reasonLabel(dev.reason), left);
-            return dev.reason ? i18n("Not reachable: %1", reasonLabel(dev.reason)) : i18n("Not reachable");
-        case "checking":
-            return dev.reason === "unavailable" ? i18n("Checking if it is back… %1 s", left) : i18n("Checking connection… %1 s", left);
-        case "connecting": return i18n("Connecting… timeout in %1 s", left);
-        case "encoder": return i18n("Starting encoder…");
-        case "subscribing": return i18n("Preparing stream… %1 s", left);
-        case "quitting_app":
-            return dev.deadline ? i18n("Closing %1…", dev.reason || i18n("other app")) : i18n("Closing %1 on the Chromecast…", dev.reason || i18n("other app"));
-        case "busy": return i18n("%1 is playing, starts when it ends", dev.reason || i18n("another app"));
+        case "unavailable": return i18n("No longer on the network, removed in %1 s", left);
+        case "connecting": return i18n("Connecting to the Chromecast…");
+        case "launching": return i18n("Starting the receiver on the Chromecast…");
         case "loading": return i18n("Loading on the Chromecast… %1 s", elapsed(dev.since));
-        case "playing": return i18n("Playing");
         case "paused": return i18n("Paused on the Chromecast");
-        case "idle": return i18n("Stopped on the Chromecast");
-        case "buffering": return i18n("Buffering, restart in %1 s if it does not recover", left);
-        case "restarting":
-            return dev.deadline && left > 0 ? i18n("Restarting in %1 s (%2)", left, reasonLabel(dev.reason)) : i18n("Restarting…");
         case "lingering": return i18n("No audio, stops in %1 s", left);
+        case "restarting":
+            return left > 0 ? i18n("Retrying in %1 s: %2", left, dev.reason) : i18n("Retrying…");
+        case "busy":
+            return dev.reason ? i18n("%1 took the Chromecast", dev.reason) : i18n("Another app took the Chromecast");
         default: return phaseLabel(dev.phase);
         }
     }
@@ -195,6 +189,7 @@ PlasmoidItem {
         case "idle": return Kirigami.Theme.disabledTextColor;
         case "buffering":
         case "busy":
+        case "lingering":
         case "restarting": return Kirigami.Theme.neutralTextColor;
         default: return Kirigami.Theme.highlightColor;
         }
@@ -203,35 +198,18 @@ PlasmoidItem {
     function eventText(ev) {
         const a = ev.args || {};
         switch (ev.code) {
-        case "started": return i18np("sound-cast started, %1 device found", "sound-cast started, %1 devices found", a.count || 0);
-        case "activated": return a.app ? i18n("Audio from %1", a.app) : i18n("Audio arrived");
-        case "switching": return i18n("Audio moved here from %1", deviceName(a.previous));
-        case "connecting": return i18n("Connecting to the Chromecast");
-        case "quitting_app": return i18n("Closing %1 on the Chromecast", a.app);
-        case "loading": return i18n("Stream sent to the Chromecast");
-        case "busy": return i18n("%1 is playing, waiting for it to end", a.app);
-        case "busy_over": return i18n("The Chromecast is free, starting");
-        case "took_over": return i18n("Replacing %1", a.app);
-        case "buffering": return i18n("The Chromecast is buffering");
-        case "buffering_restart": return i18n("Buffering for %1 s, restarting the stream", a.seconds);
-        case "connection_lost": return i18n("Connection to the Chromecast lost");
-        case "load_failed": return i18n("The Chromecast could not load the stream (error %1)", a.error);
-        case "buffering_loop": return i18n("The Chromecast keeps buffering: unplug it and plug it back in");
-        case "not_reachable": return i18n("The Chromecast did not respond within %1 s", a.seconds);
-        case "gone": return i18n("Device disappeared from the network");
-        case "ffmpeg_failed": return i18n("The encoder failed to start, sound-cast is shutting down");
-        case "ffmpeg_exited": return i18n("The encoder stopped (code %1), restarting", a.exit_code);
-        case "subscribe_failed": return i18n("Could not start the stream: %1", a.error);
-        case "activation_failed": return i18n("Could not start the stream");
-        case "stopped": return i18n("Stream stopped");
-        case "moved_away": return i18n("Audio moved to another output");
-        case "idle_stop": return i18n("No audio for %1 s, stream stopped", Math.round(a.seconds || 0));
-        case "skip_unavailable": return i18n("Audio sent to a device that is not reachable");
-        case "unavailable": return i18n("Device no longer available: %1", reasonLabel(a.reason));
-        case "address_changed": return i18n("Device changed address, checking it");
-        case "added": return i18n("New device found");
-        case "restored": return i18n("Device available again");
-        default: return ev.text;
+        case "started": return i18n("sound-cast started");
+        case "found": return i18n("Found on the network");
+        case "lost": return i18n("Gone from the network");
+        case "back": return i18n("Back on the network");
+        case "removed": return i18n("Removed: gone from the network for a minute");
+        case "playing": return i18n("Playing");
+        case "idle_stop": return i18n("No audio for %1 s, stopped", a.seconds);
+        case "yielded": return a.app ? i18n("%1 took the Chromecast", a.app) : i18n("Another app took the Chromecast");
+        case "resumed": return i18n("Taken back");
+        case "error": return i18n("%1, retrying in %2 s", a.error, a.retry);
+        case "not_fetched": return i18n("The Chromecast did not fetch the audio: is port %1/tcp open in the firewall?", a.port);
+        default: return ev.code;
         }
     }
 
@@ -248,6 +226,8 @@ PlasmoidItem {
             return i18n("Off");
         if (!connected)
             return i18n("Connecting to sound-cast…");
+        if (activeDevices.length > 1)
+            return i18np("Playing in %1 room", "Playing in %1 rooms", activeDevices.length);
         if (activeDevice)
             return i18n("%1: %2", activeDevice.friendly_name, phaseLabel(activeDevice.phase));
         if (selectedDevice)
@@ -288,17 +268,20 @@ PlasmoidItem {
         exec.run(sinkName ? `sound-cast-move ${sinkName}` : "sound-cast-move --local", () => {});
     }
 
-    // Ask sound-cast to interrupt the other app (needed with --takeover idle; harmless otherwise).
-    function takeover(sinkName) {
-        const xhr = new XMLHttpRequest();
-        xhr.open("POST", `http://127.0.0.1:${port}/devices/${sinkName}/takeover`);
-        xhr.send();
+    // Ask sound-cast to take a device back from the app that took it.
+    function resume(sinkName) {
+        DBus.SessionBus.asyncCall({
+            service: "org.soundcast.Daemon",
+            path: "/org/soundcast/Daemon",
+            iface: "org.soundcast.Daemon1",
+            member: "Resume",
+            arguments: [new DBus.string(sinkName)],
+        });
     }
 
-    // A click on a device: confirm first when another app plays on it.
+    // A click on a device: confirm first when another app has it.
     function chooseDevice(dev) {
-        const isActive = activeDevice !== null && activeDevice.sink_name === dev.sink_name;
-        if ((dev.busy_with && !isActive) || dev.phase === "busy") {
+        if (dev.phase === "busy") {
             confirmSink = confirmSink === dev.sink_name ? "" : dev.sink_name;
             return;
         }
@@ -306,11 +289,9 @@ PlasmoidItem {
         moveAudio(dev.sink_name);
     }
 
-    // interrupt: stop the other app now; otherwise (--takeover idle) wait for it to end.
-    function confirmDevice(dev, interrupt) {
+    function confirmDevice(dev) {
         confirmSink = "";
-        if (interrupt)
-            takeover(dev.sink_name);
+        resume(dev.sink_name);
         if (defaultSink !== dev.sink_name)
             moveAudio(dev.sink_name);
     }
@@ -322,25 +303,6 @@ PlasmoidItem {
     onDefaultSinkChanged: {
         if (pendingSink !== "" && (pendingSink === defaultSink || (pendingSink === "local" && !defaultSink.startsWith("sound-cast."))))
             pendingSink = "";
-    }
-
-    function handleMessage(message) {
-        let msg;
-        try {
-            msg = JSON.parse(message);
-        } catch (e) {
-            return;
-        }
-        if (msg.type === "status") {
-            clockOffset = msg.status.now - Date.now() / 1000;
-            if (msg.status.events !== undefined)
-                events = msg.status.events;
-            pstatus = msg.status;
-        } else if (msg.type === "event") {
-            const list = events.slice(-49);
-            list.push(msg.event);
-            events = list;
-        }
     }
 
     // -- plumbing ----------------------------------------------------------------------
@@ -393,18 +355,21 @@ PlasmoidItem {
         });
     }
 
-    WebSocket {
-        id: socket
-        url: `ws://127.0.0.1:${root.port}/events`
-        active: root.unitActive === "active"
-        onTextMessageReceived: (message) => root.handleMessage(message)
-        onStatusChanged: {
-            if (status === WebSocket.Closed || status === WebSocket.Error) {
-                root.pstatus = null;
-                if (active)
-                    reconnect.start();
-            }
-        }
+    // sound-cast's own state: read once, then updated by PropertiesChanged.
+    DBus.Properties {
+        id: daemonProps
+        busType: DBus.BusType.Session
+        service: "org.soundcast.Daemon"
+        path: "/org/soundcast/Daemon"
+        iface: "org.soundcast.Daemon1"
+    }
+    DBus.DBusServiceWatcher {
+        id: daemonWatcher
+        busType: DBus.BusType.Session
+        watchedService: "org.soundcast.Daemon"
+        // A new daemon process starts with a new state.
+        onRegisteredChanged: if (registered)
+            daemonProps.updateAll()
     }
 
     Timer {
@@ -412,15 +377,6 @@ PlasmoidItem {
         id: pendingSinkTimeout
         interval: 6000
         onTriggered: root.pendingSink = ""
-    }
-
-    Timer {
-        id: reconnect
-        interval: 2000
-        onTriggered: {
-            socket.active = false;
-            socket.active = Qt.binding(() => root.unitActive === "active");
-        }
     }
 
     Timer {
@@ -437,13 +393,14 @@ PlasmoidItem {
     }
 
     Plasmoid.icon: castIcon
-    Plasmoid.status: unitActive === "failed" || autoRestarting || activeDevice !== null
+    Plasmoid.status: unitActive === "failed" || autoRestarting || activeDevices.length > 0
         ? PlasmaCore.Types.ActiveStatus : PlasmaCore.Types.PassiveStatus
     toolTipMainText: "sound-cast"
     toolTipSubText: summary()
 
+    // sound-cast logs to the journal. setsid detaches the terminal from the command timeout.
     function openLog() {
-        exec.run(`xdg-open '${logFile}'`, () => {});
+        exec.run(`setsid -f konsole -e journalctl --user -f -u ${unit}`, () => {});
     }
 
     // Right-click menu on the panel icon.
@@ -584,9 +541,13 @@ PlasmoidItem {
                 Layout.fillWidth: true
             }
 
-            StreamCard {
-                Layout.fillWidth: true
-                visible: root.activeDevice !== null
+            Repeater {
+                model: root.activeDevices
+                delegate: StreamCard {
+                    required property var modelData
+                    Layout.fillWidth: true
+                    dev: modelData
+                }
             }
 
             SectionTitle {
@@ -678,7 +639,7 @@ PlasmoidItem {
             if (root.unitActive === "activating")
                 return "";
             if (!root.connected)
-                return i18n("If this takes long, sound-cast may be using another port (see the widget settings).");
+                return i18n("If this takes long, see the log with: journalctl --user -u %1", root.unit);
             return i18n("sound-cast keeps looking. The PC must be on the same network as the Chromecasts.");
         }
         helpfulAction: root.unitActive === "failed" || (!root.serviceOn && root.pendingAction === "") ? startAction : null
@@ -690,11 +651,10 @@ PlasmoidItem {
         }
     }
 
-    // The active stream: what plays where, the pipeline steps, the running timer, health.
+    // A room with a Cast session: the device, the pipeline steps, the running timer, health.
     component StreamCard: Rectangle {
         id: card
-        readonly property var dev: root.activeDevice
-        readonly property var stream: root.connected ? root.pstatus.stream : null
+        property var dev: null
         implicitHeight: cardLayout.implicitHeight + 2 * Kirigami.Units.largeSpacing
         radius: Kirigami.Units.cornerRadius
         color: Qt.alpha(dev ? root.phaseColor(dev.phase) : Kirigami.Theme.textColor, 0.08)
@@ -728,13 +688,17 @@ PlasmoidItem {
                     PlasmaComponents3.Label {
                         Layout.fillWidth: true
                         visible: text !== ""
-                        text: card.stream && card.stream.source_app ? i18n("Audio from %1", card.stream.source_app) : ""
+                        text: !card.dev || card.dev.volume === null ? ""
+                            : card.dev.muted ? i18n("Muted on the Chromecast")
+                            : i18n("Volume %1%", card.dev.volume)
                         font: Kirigami.Theme.smallFont
                         opacity: 0.8
                         elide: Text.ElideRight
                     }
                 }
                 PlasmaComponents3.ToolButton {
+                    // Only the default output can be moved back; other rooms play their own sink.
+                    visible: card.dev !== null && root.defaultSink === card.dev.sink_name
                     icon.name: "computer-symbolic"
                     text: i18n("Back to PC")
                     display: PlasmaComponents3.AbstractButton.TextBesideIcon
@@ -766,25 +730,26 @@ PlasmoidItem {
 
             RowLayout {
                 Layout.fillWidth: true
-                visible: card.stream !== null && card.stream.last_segment_at !== null
-                // sound-cast pushes fetch_stalled when it flips; the timestamps alone are only as
-                // fresh as the last pushed snapshot, so they cannot tell a stall by themselves.
-                readonly property bool stalled: card.stream !== null && card.stream.fetch_stalled === true
-                readonly property real age: stalled && card.stream.last_segment_at ? root.serverNow() - card.stream.last_segment_at : 0
+                visible: card.dev !== null && ["loading", "playing", "buffering", "paused", "lingering"].includes(card.dev.phase)
+                // While loading, no listener means the Chromecast cannot reach the stream port.
+                readonly property bool unreached: card.dev !== null && card.dev.listeners === 0 && card.dev.phase === "loading"
+                    && root.serverNow() - card.dev.since > 5
+                readonly property bool flowing: card.dev !== null && card.dev.listeners > 0
                 Kirigami.Icon {
-                    source: parent.stalled ? "dialog-warning-symbolic" : "network-transmit-receive-symbolic"
+                    source: parent.unreached ? "dialog-warning-symbolic" : "network-transmit-receive-symbolic"
                     Layout.preferredWidth: Kirigami.Units.iconSizes.small
                     Layout.preferredHeight: Kirigami.Units.iconSizes.small
                 }
                 PlasmaComponents3.Label {
                     Layout.fillWidth: true
                     font: Kirigami.Theme.smallFont
-                    text: parent.stalled
-                        ? i18n("The Chromecast stopped fetching audio %1 s ago", Math.round(parent.age))
-                        : i18n("Audio flowing to the Chromecast")
-                    color: parent.stalled ? Kirigami.Theme.neutralTextColor : Kirigami.Theme.textColor
-                    opacity: parent.stalled ? 1 : 0.7
-                    elide: Text.ElideRight
+                    text: parent.unreached
+                        ? i18n("The Chromecast has not fetched the audio yet: is port %1/tcp open in the firewall?", root.port)
+                        : parent.flowing ? i18n("Audio flowing to the Chromecast")
+                        : i18n("Waiting for the Chromecast to fetch the audio")
+                    color: parent.unreached ? Kirigami.Theme.neutralTextColor : Kirigami.Theme.textColor
+                    opacity: parent.unreached ? 1 : 0.7
+                    wrapMode: Text.Wrap
                 }
             }
             PlasmaComponents3.Label {
@@ -794,7 +759,7 @@ PlasmoidItem {
                 color: Kirigami.Theme.neutralTextColor
                 wrapMode: Text.Wrap
                 // From 8 a minute it is the loop a Chromecast falls into and only leaves
-                // after a power cycle (sound-cast logs it as a buffering loop), not the Wi-Fi.
+                // after a power cycle, not the Wi-Fi.
                 text: !card.dev ? ""
                     : card.dev.buffering_last_minute >= 8
                     ? i18n("Buffered %1 times in the last minute: the Chromecast seems stuck, unplug it and plug it back in", card.dev.buffering_last_minute)
@@ -804,24 +769,22 @@ PlasmoidItem {
         }
     }
 
-    // Connect → Encoder → Prepare → Load → Play
+    // Connect → Start → Load → Play
     component PipelineStepper: RowLayout {
         id: stepper
         property string phase
-        readonly property var steps: [i18n("Connect"), i18n("Encoder"), i18n("Prepare"), i18n("Load"), i18n("Play")]
+        readonly property var steps: [i18n("Connect"), i18n("Start"), i18n("Load"), i18n("Play")]
+        readonly property int last: steps.length - 1
         readonly property int current: {
             switch (phase) {
             case "connecting": return 0;
-            case "encoder": return 1;
-            case "subscribing":
-            case "quitting_app":
-            case "busy": return 2;
-            case "loading": return 3;
+            case "launching": return 1;
+            case "loading": return 2;
             case "restarting": return -1;
-            default: return 4;
+            default: return last;
             }
         }
-        readonly property bool done: current === 4 && phase === "playing"
+        readonly property bool done: current === last && phase === "playing"
         spacing: 0
 
         Repeater {
@@ -829,7 +792,7 @@ PlasmoidItem {
             delegate: RowLayout {
                 id: step
                 required property int index
-                readonly property bool passed: stepper.current >= 0 && index < stepper.current || (index === 4 && stepper.done)
+                readonly property bool passed: stepper.current >= 0 && index < stepper.current || (index === stepper.last && stepper.done)
                 readonly property bool here: index === stepper.current && !stepper.done
                 Layout.fillWidth: index > 0
                 spacing: 0
@@ -851,7 +814,7 @@ PlasmoidItem {
                         implicitWidth: Kirigami.Units.iconSizes.small
                         implicitHeight: implicitWidth
                         radius: width / 2
-                        color: step.passed ? (step.index === 4 ? Kirigami.Theme.positiveTextColor : Kirigami.Theme.highlightColor)
+                        color: step.passed ? (step.index === stepper.last ? Kirigami.Theme.positiveTextColor : Kirigami.Theme.highlightColor)
                             : step.here ? Kirigami.Theme.backgroundColor : "transparent"
                         border.width: 2
                         border.color: step.here ? root.phaseColor(stepper.phase)
@@ -1031,7 +994,7 @@ PlasmoidItem {
     component DeviceRow: OutputRow {
         id: row
         property var device
-        readonly property bool isActive: root.activeDevice !== null && root.activeDevice.sink_name === device.sink_name
+        readonly property bool isActive: root.isActive(device)
         readonly property bool isDefault: root.defaultSink === device.sink_name
 
         iconSource: root.castIcon
@@ -1048,27 +1011,21 @@ PlasmoidItem {
                 return root.transitional(device.phase) ? root.phaseDetail(device) : root.phaseLabel(device.phase);
             if (device.phase !== "ready")
                 return root.phaseDetail(device);
-            if (device.busy_with)
-                return i18n("In use: %1", device.busy_with);
             if (isDefault)
                 return i18n("Selected, starts when audio plays");
             return "";
         }
         subtitleColor: pending ? Kirigami.Theme.highlightColor
-            : device.phase === "ready" && device.busy_with && !isActive ? Kirigami.Theme.neutralTextColor
             : isDefault && device.phase === "ready" ? Kirigami.Theme.highlightColor : root.phaseColor(device.phase)
         timerValue: !isActive && device.deadline !== null ? root.timerFraction(device) : -1
         tooltip: i18n("Play the audio on %1", device.friendly_name)
         onActivated: root.chooseDevice(device)
     }
 
-    // Inline confirmation under a device another app is playing on.
+    // Inline confirmation under a device another app took.
     component TakeoverConfirm: RowLayout {
         id: confirm
         property var device
-        readonly property bool waiting: device.phase === "busy"
-        // With --takeover idle, choosing the device can also wait for the other app to end.
-        readonly property bool canWait: !waiting && root.pstatus !== null && root.pstatus.takeover === "idle"
         spacing: Kirigami.Units.smallSpacing
         Layout.leftMargin: Kirigami.Units.largeSpacing + Kirigami.Units.iconSizes.smallMedium + Kirigami.Units.largeSpacing
         Layout.rightMargin: Kirigami.Units.smallSpacing
@@ -1076,19 +1033,14 @@ PlasmoidItem {
 
         PlasmaComponents3.Label {
             Layout.fillWidth: true
-            text: i18n("Stop %1?", confirm.device.busy_with || confirm.device.reason || i18n("the other app"))
+            text: i18n("Stop %1 and play here?", confirm.device.reason || i18n("the other app"))
             font: Kirigami.Theme.smallFont
             wrapMode: Text.Wrap
         }
         PlasmaComponents3.Button {
-            text: i18n("Interrupt")
-            icon.name: "media-playback-stop-symbolic"
-            onClicked: root.confirmDevice(confirm.device, true)
-        }
-        PlasmaComponents3.Button {
-            visible: confirm.canWait
-            text: i18n("Wait")
-            onClicked: root.confirmDevice(confirm.device, false)
+            text: i18n("Take back")
+            icon.name: "media-playback-start-symbolic"
+            onClicked: root.confirmDevice(confirm.device)
         }
         PlasmaComponents3.ToolButton {
             icon.name: "dialog-cancel-symbolic"
