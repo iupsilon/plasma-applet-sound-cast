@@ -68,6 +68,11 @@ On Arch you can also build the package with the `PKGBUILD` in
 cd packaging/arch && makepkg -si
 ```
 
+From the [KDE Store](https://store.kde.org/p/2381580/): right-click the panel, **Add or
+Manage Widgets**, **Get New Widgets**, **Download New Plasma Widgets**, and search for
+"sound-cast". This installs the widget for your user only, in English; the packages above
+also bring the translations.
+
 From source, on any distribution:
 
 ```sh

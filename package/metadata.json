@@ -9,7 +9,7 @@
         "Category": "Multimedia",
         "Description": "Status and control of sound-cast: PipeWire audio to Chromecast",
         "Description[it]": "Stato e controllo di sound-cast: audio PipeWire verso Chromecast",
-        "Icon": "sound-cast-symbolic",
+        "Icon": "sound-cast",
         "Id": "org.soundcast.status",
         "License": "GPL-3.0-or-later",
         "Name": "sound-cast",
