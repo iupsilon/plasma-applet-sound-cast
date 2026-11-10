@@ -1,0 +1,70 @@
+# Builds the packages on every push and pull request. A tag vX.Y.Z also
+# publishes them as a GitHub release, with the notes from CHANGELOG.md.
+name: Packages
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  NFPM_VERSION: 2.48.0
+
+jobs:
+  packages:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install the build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends gettext make
+          curl -sSfL -o /tmp/nfpm.deb \
+            "https://github.com/goreleaser/nfpm/releases/download/v${NFPM_VERSION}/nfpm_${NFPM_VERSION}_amd64.deb"
+          sudo apt-get install -y /tmp/nfpm.deb
+
+      - name: Check that the tag matches metadata.json
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          version=$(sed -n 's/.*"Version": "\(.*\)".*/\1/p' package/metadata.json)
+          test "v$version" = "$GITHUB_REF_NAME" || {
+            echo "Tag $GITHUB_REF_NAME does not match version $version in package/metadata.json"
+            exit 1
+          }
+
+      - name: Check the translations
+        run: msgfmt --check --statistics -o /dev/null po/*.po
+
+      - name: Build the packages
+        run: packaging/package.sh
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: packages
+          path: |
+            dist/plasma6-applets-sound-cast*
+            dist/SHA256SUMS
+
+      - name: Extract the release notes
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          version=${GITHUB_REF_NAME#v}
+          awk -v v="$version" '
+            /^## / { on = index($0, "[" v "]") > 0; next }
+            on' CHANGELOG.md > dist/notes.md
+          test -s dist/notes.md
+
+      - name: Publish the release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v3
+        with:
+          body_path: dist/notes.md
+          files: |
+            dist/plasma6-applets-sound-cast*
+            dist/SHA256SUMS

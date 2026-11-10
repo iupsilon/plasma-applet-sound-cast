@@ -1,5 +1,6 @@
+# Maintainer: Yari Melzani <yari.melzani@gmail.com>
 pkgname=plasma6-applets-sound-cast
-pkgver=1.0.r0.g0000000
+pkgver=0.1.0
 pkgrel=1
 pkgdesc="Plasma 6 widget for sound-cast: status, device switching and event log"
 arch=(any)
@@ -8,15 +9,8 @@ license=(GPL-3.0-or-later)
 # python and libpulse (pactl) are used by sound-cast-move.
 depends=(sound-cast python plasma-workspace plasma-pa plasma5support libpulse systemd)
 makedepends=(git gettext make)
-source=("plasma-applet-sound-cast::git+file:///home/yari/Repository/plasma-applet-sound-cast")
+source=("git+$url.git#tag=v$pkgver")
 sha256sums=(SKIP)
-
-pkgver() {
-  cd plasma-applet-sound-cast
-  local v
-  v=$(sed -n 's/.*"Version": "\(.*\)".*/\1/p' package/metadata.json)
-  printf '%s.r%s.g%s' "$v" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
-}
 
 package() {
   cd plasma-applet-sound-cast

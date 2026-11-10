@@ -1,0 +1,59 @@
+# .deb, .rpm and Arch packages, built by packaging/package.sh from the files
+# that `make install DESTDIR=dist/root` installs.
+# VERSION comes from the environment (the version in package/metadata.json).
+name: plasma6-applets-sound-cast
+arch: all
+platform: linux
+version: ${VERSION}
+release: 1
+section: kde
+priority: optional
+maintainer: Yari Melzani <yari.melzani@gmail.com>
+description: |
+  Plasma 6 widget for sound-cast: status, device switching and event log.
+  Shows the rooms that play on Chromecast speakers through sound-cast, moves
+  the audio between this computer and the speakers with one click, and turns
+  the sound-cast service on and off.
+vendor: Yari Melzani
+homepage: https://github.com/iupsilon/plasma-applet-sound-cast
+license: GPL-3.0-or-later
+
+contents:
+  - src: dist/root/
+    dst: /
+    type: tree
+  - src: README.md
+    dst: /usr/share/doc/plasma6-applets-sound-cast/README.md
+    file_info:
+      mode: 0644
+
+# python and pactl are used by sound-cast-move; pactl needs a PulseAudio
+# server, which PipeWire provides through pipewire-pulse.
+overrides:
+  deb:
+    depends:
+      - sound-cast
+      - python3
+      - pulseaudio-utils
+    recommends:
+      - plasma-workspace
+      - plasma-pa
+      - pipewire-pulse
+  rpm:
+    depends:
+      - sound-cast
+      - python3
+      - pulseaudio-utils
+    recommends:
+      - plasma-workspace
+      - plasma-pa
+      - pipewire-pulseaudio
+  archlinux:
+    depends:
+      - sound-cast
+      - python
+      - libpulse
+      - plasma-workspace
+      - plasma-pa
+      - plasma5support
+      - systemd

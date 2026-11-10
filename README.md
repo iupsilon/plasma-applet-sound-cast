@@ -1,7 +1,11 @@
 # sound-cast Plasma widget
 
-A KDE Plasma 6 widget for [sound-cast](https://github.com/iupsilon/sound-cast), which streams
-PipeWire audio to Chromecast devices.
+A KDE Plasma 6 widget for [sound-cast](https://github.com/iupsilon/sound-cast), which plays
+the desktop audio on Chromecast speakers through one PipeWire sink per room.
+
+| Playing on a speaker | Idle |
+|---|---|
+| ![Playing on a speaker](docs/playing.png) | ![Idle, three speakers ready](docs/idle.png) |
 
 - Turns the `sound-cast` user service on and off, and sets it to start at login.
 - Shows every room that plays: each step of the connection with its timer, the
@@ -13,41 +17,54 @@ PipeWire audio to Chromecast devices.
 - Takes a Chromecast back when another app (for example YouTube) took it.
 - Keeps a log of recent events for troubleshooting: one line with the latest, a click
   opens the list.
+- English and Italian.
 
 The widget reads sound-cast's state from its D-Bus object (`org.soundcast.Daemon` on the
 session bus, interface `org.soundcast.Daemon1`), the service state from systemd and the
-default output from the Plasma audio module, all through change signals: nothing is polled. Shell commands (`systemctl --user`, `sound-cast-move`) run only
-when you start or stop the service or move the audio.
+default output from the Plasma audio module, all through change signals: nothing is
+polled. Shell commands (`systemctl --user`, `sound-cast-move`) run only when you start or
+stop the service or move the audio.
 
 ## Requirements
 
-- [sound-cast](https://github.com/iupsilon/sound-cast) with its `sound-cast.service` user unit
+- [sound-cast](https://github.com/iupsilon/sound-cast) 0.1.0 or later, with its
+  `sound-cast.service` user unit
 - Plasma 6 with `plasma-pa` and `plasma5support`
-- `pactl` (libpulse) and systemd user services
+- `pactl` (libpulse) with a PulseAudio server (`pipewire-pulse`), `python3`
+- systemd user services
 
 ## Install
 
-Arch Linux: build the package in `packaging/arch`:
+Install [sound-cast](https://github.com/iupsilon/sound-cast#install) first, then download
+the package for your distribution from the
+[latest release](https://github.com/iupsilon/plasma-applet-sound-cast/releases/latest):
+
+| Distribution | Package | Install |
+|---|---|---|
+| Arch Linux, CachyOS, Manjaro | `plasma6-applets-sound-cast-X.Y.Z-1-any.pkg.tar.zst` | `sudo pacman -U ./plasma6-applets-sound-cast-*.pkg.tar.zst` |
+| Debian 13+, Ubuntu 25.04+ (Plasma 6) | `plasma6-applets-sound-cast_X.Y.Z-1_all.deb` | `sudo apt install ./plasma6-applets-sound-cast_*.deb` |
+| Fedora (Plasma 6) | `plasma6-applets-sound-cast-X.Y.Z-1.noarch.rpm` | `sudo dnf install ./plasma6-applets-sound-cast-*.rpm` |
+
+The widget is plain QML and a shell script, so the same files work on every
+distribution with Plasma 6. It is tested on Arch Linux and CachyOS.
+
+On Arch you can also build the package with the `PKGBUILD` in
+[`packaging/arch`](packaging/arch):
 
 ```sh
 cd packaging/arch && makepkg -si
 ```
 
-Elsewhere:
+From source, on any distribution:
 
 ```sh
 sudo make install            # PREFIX=/usr by default
+sudo make uninstall
 ```
 
-For development, install for the current user only and run it in a window:
-
-```sh
-make test-install
-plasmawindowed org.soundcast.status
-make test-uninstall          # the user copy overrides the system one: remove it after
-```
-
-Then add "sound-cast" to a panel or the system tray.
+Then right-click the panel, **Add or Manage Widgets**, and add "sound-cast" to a panel,
+or enable it in the system tray settings. After an upgrade, log out and back in (or
+restart `plasmashell`) to load the new version.
 
 ## Settings
 
@@ -66,13 +83,61 @@ Command-line helper the widget uses to move the audio:
 ```sh
 sound-cast-move sound-cast.sala     # default output + move every stream there
 sound-cast-move --local             # move the streams on Chromecasts back to a local sink
+sound-cast-move --local-sink        # print the local sink that --local would use
 ```
 
-## Translations
+## Development
+
+Install for the current user only and run it in a window:
+
+```sh
+make test-install
+plasmawindowed org.soundcast.status
+make test-uninstall          # the user copy overrides the system one: remove it after
+```
+
+`make` targets:
+
+| Target | Does |
+|---|---|
+| `install`, `uninstall` | install or remove the widget, icon, translations and `sound-cast-move` (`DESTDIR`, `PREFIX`) |
+| `test-install`, `test-uninstall` | install for the current user with `kpackagetool6` |
+| `pot` | extract the strings to `po/plasma_applet_org.soundcast.status.pot` |
+| `merge` | update `po/*.po` from the template and check them |
+
+### Translations
 
 Strings are in `po/`. After changing the UI, run `make merge`, then translate the new
 entries in `po/<lang>.po`. Add a language by copying the `.pot` file to `po/<lang>.po`.
 
+## Build the packages
+
+[`packaging/package.sh`](packaging/package.sh) installs the widget into `dist/root` and
+builds the `.deb`, `.rpm` and Arch packages into `dist/`. It needs `make`, `gettext` and
+[nfpm](https://nfpm.goreleaser.com):
+
+```sh
+packaging/package.sh
+```
+
+The [Packages workflow](.github/workflows/release.yml) runs it for every push. For a tag
+it also publishes a GitHub release with the packages.
+
+## Releasing
+
+1. Set the new version in `package/metadata.json` (`KPlugin.Version`) and in
+   `packaging/arch/PKGBUILD` (`pkgver`).
+2. Add a section for it at the top of [`CHANGELOG.md`](CHANGELOG.md).
+3. Commit, tag and push:
+
+   ```sh
+   git tag -a v0.2.0 -m "sound-cast widget 0.2.0"
+   git push origin main v0.2.0
+   ```
+
+The workflow checks that the tag matches `metadata.json`, builds the packages and
+publishes the release with the notes from the changelog.
+
 ## License
 
-GPL-3.0-or-later. See `LICENSE`.
+GPL-3.0-or-later. See [`LICENSE`](LICENSE).

@@ -4,3 +4,4 @@ packaging/arch/plasma-applet-sound-cast/
 *.pkg.tar.*
 *.log
 *.mo
+/dist
