@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/logo.svg" width="128" height="128" alt="sound-cast logo"></p>
+
 # sound-cast Plasma widget
 
 A KDE Plasma 6 widget for [sound-cast](https://github.com/iupsilon/sound-cast), which plays
