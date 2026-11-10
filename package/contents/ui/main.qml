@@ -25,7 +25,7 @@ PlasmoidItem {
 
     readonly property string unit: Plasmoid.configuration.unitName || "sound-cast"
     // The TCP port the Chromecasts fetch the audio from, as sound-cast reports it.
-    readonly property int port: pstatus ? pstatus.port : 3000
+    readonly property int port: pstatus ? pstatus.port : 8574
 
     readonly property string unitFile: unit.includes(".") ? unit : unit + ".service"
     // active, inactive, activating, deactivating, failed

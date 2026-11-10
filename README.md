@@ -72,8 +72,8 @@ Right-click the widget, Configure:
 
 - **Service**: the systemd user unit (`sound-cast`).
 
-The Chromecasts fetch the audio from the sound-cast port (3000 by default), so it must be
-reachable from the network (for example `sudo ufw allow 3000/tcp`). The widget warns when
+The Chromecasts fetch the audio from the sound-cast port (8574 by default), so it must be
+reachable from the network (for example `sudo ufw allow 8574/tcp`). The widget warns when
 a Chromecast does not fetch it.
 
 ## `sound-cast-move`
