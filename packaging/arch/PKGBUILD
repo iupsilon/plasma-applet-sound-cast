@@ -1,6 +1,6 @@
 # Maintainer: Yari Melzani <yari.melzani@gmail.com>
 pkgname=plasma6-applets-sound-cast
-pkgver=0.1.0
+pkgver=0.1.1
 pkgrel=1
 pkgdesc="Plasma 6 widget for sound-cast: status, device switching and event log"
 arch=(any)

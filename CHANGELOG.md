@@ -4,6 +4,12 @@ All notable changes to the sound-cast Plasma widget. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [0.1.1] - 2026-11-10
+
+- "Add Widgets" shows the colour sound-cast logo; it needs sound-cast 0.1.1, which
+  installs it. The panel and the system tray keep the symbolic icon.
+- The README links the widget's KDE Store page.
+
 ## [0.1.0] - 2026-11-10
 
 First public release.
@@ -21,4 +27,5 @@ First public release.
 - English and Italian.
 - Packages for Arch Linux, Debian/Ubuntu and Fedora, built on every tag.
 
+[0.1.1]: https://github.com/iupsilon/plasma-applet-sound-cast/releases/tag/v0.1.1
 [0.1.0]: https://github.com/iupsilon/plasma-applet-sound-cast/releases/tag/v0.1.0
