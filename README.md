@@ -7,6 +7,17 @@ the desktop audio on Chromecast speakers through one PipeWire sink per room.
 |---|---|
 | ![Playing on a speaker](docs/playing.png) | ![Idle, three speakers ready](docs/idle.png) |
 
+## The two parts
+
+sound-cast comes in two repositories. Install the daemon first.
+
+| Part | Repository | What it does | Needed |
+|---|---|---|---|
+| **Daemon** | [iupsilon/sound-cast](https://github.com/iupsilon/sound-cast) | Finds the Chromecasts, creates one PipeWire sink per room and streams the audio to them. | Yes |
+| **Plasma widget** | [iupsilon/plasma-applet-sound-cast](https://github.com/iupsilon/plasma-applet-sound-cast) (this one) | KDE Plasma 6 panel and system tray widget: status of every room, one-click output switching, service on/off, event log. | No |
+
+## Features
+
 - Turns the `sound-cast` user service on and off, and sets it to start at login.
 - Shows every room that plays: each step of the connection with its timer, the
   Chromecast volume, buffering, and whether the Chromecast fetches the audio.
