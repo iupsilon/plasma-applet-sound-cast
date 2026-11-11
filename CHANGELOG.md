@@ -6,6 +6,8 @@ All notable changes to the sound-cast Plasma widget. The format follows
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-11
+
 ### Added
 
 - A volume slider and a mute button on the card of every room that plays.
@@ -24,8 +26,8 @@ All notable changes to the sound-cast Plasma widget. The format follows
 - The event log explains the new events: pause, play and stop on the Chromecast,
   and rescans.
 
-The volume and mute, the rescan, the track and the delay need a sound-cast newer
-than 0.1.1; with an older one these controls stay hidden or greyed out.
+The volume and mute, the rescan, the track and the delay need sound-cast 0.2.0
+or later; with an older one these controls stay hidden or greyed out.
 
 ## [0.1.1] - 2026-11-10
 
@@ -50,6 +52,7 @@ First public release.
 - English and Italian.
 - Packages for Arch Linux, Debian/Ubuntu and Fedora, built on every tag.
 
-[Unreleased]: https://github.com/iupsilon/plasma-applet-sound-cast/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/iupsilon/plasma-applet-sound-cast/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/iupsilon/plasma-applet-sound-cast/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/iupsilon/plasma-applet-sound-cast/releases/tag/v0.1.1
 [0.1.0]: https://github.com/iupsilon/plasma-applet-sound-cast/releases/tag/v0.1.0

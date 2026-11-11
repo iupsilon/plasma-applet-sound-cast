@@ -55,7 +55,7 @@ PlasmoidItem {
     readonly property bool serviceOn: unitActive === "active" || unitActive === "activating" || unitActive === "reloading"
     readonly property bool autoRestarting: unitActive === "activating" && unitSub === "auto-restart"
     readonly property bool connected: pstatus !== null
-    // Volume, mute and rescan came with the Version property (after 0.1.1).
+    // Volume, mute and rescan came with the Version property (0.2.0).
     readonly property bool controls: connected && daemonProps.properties.Version !== undefined
     readonly property var devices: connected ? sortedDevices(pstatus.devices.map(normalized)) : []
     // Rooms with a Cast session open or being retried; several can play at once.
