@@ -22,6 +22,8 @@ All notable changes to the sound-cast Plasma widget. The format follows
 
 ### Changed
 
+- The panel and the system tray show the colour sound-cast logo, not the symbolic
+  icon.
 - Moving the default output leaves alone the streams sent to another room.
 - The event log explains the new events: pause, play and stop on the Chromecast,
   and rescans.

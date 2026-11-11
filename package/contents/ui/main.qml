@@ -43,6 +43,8 @@ PlasmoidItem {
     readonly property string defaultSink: PA.Server.defaultSink ? PA.Server.defaultSink.name : ""
     property string pendingSink: ""         // output chosen in the widget, until it is the default
     readonly property string castIcon: Qt.resolvedUrl("../icons/sound-cast-symbolic.svg")
+    // The colour logo, from the package: a theme may not have it under this name.
+    readonly property string logoIcon: Qt.resolvedUrl("../icons/sound-cast.svg")
 
     // sound-cast's Status and Events properties, parsed; null while it does not answer
     readonly property var pstatus: daemonWatcher.registered ? parseJson(propString(daemonProps.properties.Status)) : null
@@ -55,8 +57,11 @@ PlasmoidItem {
     readonly property bool serviceOn: unitActive === "active" || unitActive === "activating" || unitActive === "reloading"
     readonly property bool autoRestarting: unitActive === "activating" && unitSub === "auto-restart"
     readonly property bool connected: pstatus !== null
-    // Volume, mute and rescan came with the Version property (0.2.0).
-    readonly property bool controls: connected && daemonProps.properties.Version !== undefined
+    // Volume, mute and rescan came with the Version property (0.2.0). Read again
+    // with every status: a key that appears in the properties map later does not
+    // update a binding that read it while it was missing.
+    property bool hasVersion: false
+    readonly property bool controls: connected && hasVersion
     readonly property var devices: connected ? sortedDevices(pstatus.devices.map(normalized)) : []
     // Rooms with a Cast session open or being retried; several can play at once.
     readonly property var activeDevices: devices.filter(d => isActive(d))
@@ -70,8 +75,11 @@ PlasmoidItem {
     readonly property bool busy: pendingAction !== "" || pendingSink !== "" || unitActive === "activating" || unitActive === "deactivating"
         || activeDevices.some(d => transitional(d.phase))
 
-    onPstatusChanged: if (pstatus)
-        clockOffset = pstatus.now - Date.now() / 1000
+    onPstatusChanged: {
+        hasVersion = daemonProps.properties.Version !== undefined;
+        if (pstatus)
+            clockOffset = pstatus.now - Date.now() / 1000;
+    }
 
     // -- helpers -----------------------------------------------------------------------
 
@@ -550,7 +558,7 @@ PlasmoidItem {
         confirmSink = "";
     }
 
-    Plasmoid.icon: castIcon
+    Plasmoid.icon: logoIcon
     Plasmoid.status: unitActive === "failed" || autoRestarting || activeDevices.length > 0
         ? PlasmaCore.Types.ActiveStatus : PlasmaCore.Types.PassiveStatus
     toolTipMainText: "sound-cast"
@@ -587,9 +595,7 @@ PlasmoidItem {
 
         Kirigami.Icon {
             anchors.fill: parent
-            source: root.castIcon
-            isMask: true
-            color: Kirigami.Theme.textColor
+            source: root.logoIcon
             active: compact.containsMouse
             opacity: root.serviceOn ? 1 : 0.5
         }
