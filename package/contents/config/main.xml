@@ -7,5 +7,8 @@
     <entry name="unitName" type="String">
       <default>sound-cast</default>
     </entry>
+    <entry name="notifications" type="Bool">
+      <default>true</default>
+    </entry>
   </group>
 </kcfg>

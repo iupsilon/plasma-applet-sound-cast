@@ -5,10 +5,12 @@
  * output from the Plasma audio module, the rest from sound-cast's own D-Bus object
  * (org.soundcast.Daemon1: Status and Events properties): the rooms with their phases
  * and timers, and an event log. Nothing is polled: shell commands run only for user
- * actions.
+ * actions. The streams of the apps come from the Plasma audio module too, so each one
+ * can be sent to its own room; warnings and errors also show as notifications.
  */
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Controls as QQC2
 import org.kde.plasma.plasmoid
 import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.components as PlasmaComponents3
@@ -17,6 +19,7 @@ import org.kde.plasma.plasma5support as P5Support
 import org.kde.plasma.private.volume as PA
 import org.kde.plasma.workspace.dbus as DBus
 import org.kde.kirigami as Kirigami
+import org.kde.notification
 
 PlasmoidItem {
     id: root
@@ -216,6 +219,10 @@ PlasmoidItem {
         case "stopped": return i18n("Stopped");
         case "error": return i18n("%1, retrying in %2 s", a.error, a.retry);
         case "not_fetched": return i18n("The Chromecast did not fetch the audio: is port %1/tcp open in the firewall?", a.port);
+        case "rescan": return i18n("Looking for Chromecasts again");
+        case "paused_on_device": return i18n("Paused on the Chromecast, the player paused too");
+        case "resumed_on_device": return i18n("Resumed on the Chromecast, the player resumed too");
+        case "stopped_on_device": return i18n("Stopped on the Chromecast, the player paused");
         default: return ev.code || "";
         }
     }
@@ -280,14 +287,42 @@ PlasmoidItem {
         exec.run(`bash '${moveHelper}' ${sinkName || "--local"}`, () => {});
     }
 
-    function callDaemon(member, sinkName) {
+    // Moves one app's stream; the default output and the other streams stay.
+    function moveStream(index, sinkName) {
+        // index is a number, sink names are [a-z0-9_.]: safe for the shell
+        exec.run(`bash '${moveHelper}' --stream ${Number(index)} ${sinkName || "--local"}`, () => {});
+    }
+
+    // extra: further D-Bus arguments after the sink name
+    function callDaemon(member, sinkName, extra) {
+        const args = sinkName === undefined ? [] : [new DBus.string(sinkName)];
         DBus.SessionBus.asyncCall({
             service: "org.soundcast.Daemon",
             path: "/org/soundcast/Daemon",
             iface: "org.soundcast.Daemon1",
             member: member,
-            arguments: [new DBus.string(sinkName)],
+            arguments: args.concat(extra || []),
         });
+    }
+
+    // The volume of a room, 0 to 100: sound-cast sets its sink and the device.
+    function setVolume(sinkName, percent) {
+        callDaemon("SetVolume", sinkName, [new DBus.double(Math.max(0, Math.min(100, percent)) / 100)]);
+    }
+
+    function setMute(sinkName, muted) {
+        callDaemon("SetMute", sinkName, [new DBus.bool(muted)]);
+    }
+
+    // Ask every Chromecast on the network to answer again.
+    function rescan() {
+        callDaemon("Rescan");
+    }
+
+    function trackText(track) {
+        if (!track || !track.title)
+            return "";
+        return track.artist ? i18n("%1 – %2", track.artist, track.title) : track.title;
     }
 
     // Ask sound-cast to take a device back from the app that took it.
@@ -319,6 +354,78 @@ PlasmoidItem {
 
     function isPendingTarget(sinkName) {
         return pendingSink !== "" && (pendingSink === sinkName || (pendingSink === "local" && sinkName === ""));
+    }
+
+    // -- notifications -------------------------------------------------------------------
+
+    // Events worth a notification, and how they look. Each kind shows at most once in
+    // NOTIFY_EVERY seconds per room: a retry loop does not flood the desktop.
+    readonly property var notifyCodes: ["yielded", "error", "not_fetched"]
+    readonly property int notifyEvery: 300
+    property real lastEventSeq: -1          // the newest event already looked at
+    property var lastNotified: ({})         // "code sink" -> server time
+    readonly property real loadedAt: Date.now() / 1000
+
+    // The number of an event; sound-cast 0.1 has none, its time stands in.
+    function eventSeq(ev) {
+        return ev.seq !== undefined ? ev.seq : ev.ts;
+    }
+
+    onEventsChanged: {
+        if (events.length === 0)
+            return;
+        const newest = eventSeq(events[events.length - 1]);
+        // The events already there when the widget connects are history, not news,
+        // except those after the widget started (sound-cast started from it).
+        const fresh = lastEventSeq < 0
+            ? events.filter(ev => ev.ts > loadedAt + clockOffset)
+            : events.filter(ev => eventSeq(ev) > lastEventSeq);
+        lastEventSeq = Math.max(lastEventSeq, newest);
+        if (!Plasmoid.configuration.notifications)
+            return;
+        for (const ev of fresh) {
+            if (!notifyCodes.includes(ev.code))
+                continue;
+            const id = ev.code + " " + (ev.sink_name || "");
+            if (lastNotified[id] !== undefined && ev.ts - lastNotified[id] < notifyEvery)
+                continue;
+            lastNotified[id] = ev.ts;
+            notify(ev);
+        }
+    }
+
+    // A new daemon process starts a new event log.
+    onConnectedChanged: if (!connected)
+        lastEventSeq = -1
+
+    function notify(ev) {
+        const n = notificationComponent.createObject(root, {
+            title: ev.sink_name ? root.deviceName(ev.sink_name) : "sound-cast",
+            text: root.eventText(ev),
+            // High urgency would stay on screen until closed, also in Do Not Disturb.
+            urgency: Notification.NormalUrgency,
+            sinkName: ev.sink_name || "",
+            canTakeBack: ev.code === "yielded" && !!ev.sink_name,
+        });
+        n.sendEvent();
+    }
+
+    Component {
+        id: notificationComponent
+        Notification {
+            id: notification
+            property string sinkName
+            property bool canTakeBack: false
+            property NotificationAction takeBack: NotificationAction {
+                label: i18n("Take back")
+                onActivated: root.resume(notification.sinkName)
+            }
+            componentName: "plasma_workspace"
+            eventId: "notification"
+            iconName: "sound-cast-symbolic"
+            autoDelete: true
+            actions: canTakeBack ? [takeBack] : []
+        }
     }
 
     onDefaultSinkChanged: {
@@ -391,6 +498,34 @@ PlasmoidItem {
         // A new daemon process starts with a new state.
         onRegisteredChanged: if (registered)
             daemonProps.updateAll()
+    }
+
+    // The apps' playback streams, and the sink names by index to tell where each plays.
+    PA.PulseObjectFilterModel {
+        id: appStreams
+        filters: [{ role: "VirtualStream", value: false }]
+        sourceModel: PA.SinkInputModel {}
+    }
+    property var sinkNames: ({})            // sink index -> sink name
+    Instantiator {
+        id: sinkList
+        model: PA.SinkModel {}
+        delegate: QtObject {
+            required property var model
+            readonly property int sinkIndex: model.PulseObject ? model.PulseObject.index : -1
+            readonly property string sinkName: model.PulseObject ? model.PulseObject.name : ""
+        }
+        onObjectAdded: root.updateSinkNames()
+        onObjectRemoved: root.updateSinkNames()
+    }
+    function updateSinkNames() {
+        const names = {};
+        for (let i = 0; i < sinkList.count; i++) {
+            const o = sinkList.objectAt(i);
+            if (o)
+                names[o.sinkIndex] = o.sinkName;
+        }
+        sinkNames = names;
     }
 
     Timer {
@@ -541,6 +676,12 @@ PlasmoidItem {
                             icon.name: "text-x-log"
                             onTriggered: root.openLog()
                         }
+                        PlasmaComponents3.MenuItem {
+                            text: i18n("Look for Chromecasts again")
+                            icon.name: "view-refresh-symbolic"
+                            enabled: root.connected
+                            onTriggered: root.rescan()
+                        }
                         PlasmaComponents3.MenuSeparator {}
                         PlasmaComponents3.MenuItem {
                             text: i18n("Configure widget…")
@@ -584,8 +725,11 @@ PlasmoidItem {
                 PlasmaComponents3.ScrollBar.horizontal.policy: PlasmaComponents3.ScrollBar.AlwaysOff
                 contentWidth: availableWidth
 
+                ColumnLayout {
+                width: outputScroll.availableWidth
+                spacing: Kirigami.Units.largeSpacing
                 Card {
-                    width: outputScroll.availableWidth
+                    Layout.fillWidth: true
                     OutputRow {
                         Layout.fillWidth: true
                         iconSource: "computer-symbolic"
@@ -614,6 +758,27 @@ PlasmoidItem {
                             }
                         }
                     }
+                }
+
+                // Each app's stream on its own output: one app in a room, the rest here.
+                SectionTitle {
+                    Layout.fillWidth: true
+                    visible: appsCard.visible
+                    text: i18n("Apps")
+                }
+                Card {
+                    id: appsCard
+                    Layout.fillWidth: true
+                    visible: appStreams.count > 0 && root.devices.some(d => d.phase !== "unavailable")
+                    Repeater {
+                        model: appStreams
+                        delegate: AppRow {
+                            required property var model
+                            Layout.fillWidth: true
+                            stream: model.PulseObject
+                        }
+                    }
+                }
                 }
             }
             Item {
@@ -707,14 +872,18 @@ PlasmoidItem {
                         elide: Text.ElideRight
                     }
                     PlasmaComponents3.Label {
+                        // What plays, as the app's media player tells it.
                         Layout.fillWidth: true
                         visible: text !== ""
-                        text: !card.dev || card.dev.volume === null ? ""
-                            : card.dev.muted ? i18n("Muted on the Chromecast")
-                            : i18n("Volume %1%", card.dev.volume)
+                        text: card.dev ? root.trackText(card.dev.track) : ""
                         font: Kirigami.Theme.smallFont
                         opacity: 0.8
                         elide: Text.ElideRight
+                        PlasmaComponents3.ToolTip.text: card.dev && card.dev.track
+                            ? [text, card.dev.track.album, card.dev.track.identity || card.dev.track.player]
+                                .filter(x => x).join("\n") : ""
+                        PlasmaComponents3.ToolTip.visible: trackHover.hovered && text !== ""
+                        HoverHandler { id: trackHover }
                     }
                 }
                 PlasmaComponents3.ToolButton {
@@ -729,6 +898,76 @@ PlasmoidItem {
                 }
             }
 
+            RowLayout {
+                // The room's volume: sound-cast sets it on its sink and on the device.
+                Layout.fillWidth: true
+                visible: card.dev !== null && card.dev.volume !== null
+                spacing: Kirigami.Units.smallSpacing
+                PlasmaComponents3.ToolButton {
+                    readonly property bool muted: card.dev !== null && card.dev.muted
+                    icon.name: muted ? "audio-volume-muted-symbolic"
+                        : volumeSlider.value < 34 ? "audio-volume-low-symbolic"
+                        : volumeSlider.value < 67 ? "audio-volume-medium-symbolic" : "audio-volume-high-symbolic"
+                    text: muted ? i18n("Unmute") : i18n("Mute")
+                    display: PlasmaComponents3.AbstractButton.IconOnly
+                    onClicked: root.setMute(card.dev.sink_name, !muted)
+                    PlasmaComponents3.ToolTip.text: text
+                    PlasmaComponents3.ToolTip.visible: hovered
+                }
+                PlasmaComponents3.Slider {
+                    id: volumeSlider
+                    Layout.fillWidth: true
+                    from: 0
+                    to: 100
+                    stepSize: 1
+                    opacity: card.dev !== null && card.dev.muted ? 0.5 : 1
+                    // The level sent last, until the status reports it back.
+                    property int pending: -1
+                    readonly property int reported: card.dev && card.dev.volume !== null ? card.dev.volume : 0
+                    onReportedChanged: if (reported === pending)
+                        pending = -1
+                    // Follows the device, except while the user drags or a change is on its way.
+                    Binding on value {
+                        when: !volumeSlider.pressed && volumeSlider.pending < 0
+                        value: volumeSlider.reported
+                        restoreMode: Binding.RestoreNone
+                    }
+                    function send() {
+                        if (!card.dev)
+                            return;
+                        pending = Math.round(value);
+                        pendingTimeout.restart();
+                        root.setVolume(card.dev.sink_name, pending);
+                    }
+                    onMoved: if (!volumeSend.running)
+                        volumeSend.start()
+                    onPressedChanged: if (!pressed) {
+                        volumeSend.stop();
+                        send();
+                    }
+                    Accessible.name: i18n("Volume of %1", card.dev ? card.dev.friendly_name : "")
+                    Timer {
+                        // at most a few changes a second reach the device while dragging
+                        id: volumeSend
+                        interval: 150
+                        onTriggered: volumeSlider.send()
+                    }
+                    Timer {
+                        // the device may settle elsewhere: follow it again
+                        id: pendingTimeout
+                        interval: 1500
+                        onTriggered: volumeSlider.pending = -1
+                    }
+                }
+                PlasmaComponents3.Label {
+                    Layout.minimumWidth: Kirigami.Units.gridUnit * 2
+                    horizontalAlignment: Text.AlignRight
+                    text: card.dev !== null && card.dev.muted ? i18n("Muted") : i18n("%1%", Math.round(volumeSlider.value))
+                    font: Kirigami.Theme.smallFont
+                    opacity: 0.8
+                }
+            }
+
             PipelineStepper {
                 Layout.fillWidth: true
                 Layout.topMargin: Kirigami.Units.smallSpacing
@@ -739,7 +978,10 @@ PlasmoidItem {
 
             PlasmaComponents3.Label {
                 Layout.fillWidth: true
-                text: card.dev ? root.phaseDetail(card.dev) : ""
+                text: !card.dev ? ""
+                    : card.dev.phase === "playing" && card.dev.latency_ms
+                    ? i18n("%1 · %2 ms delay", root.phaseDetail(card.dev), card.dev.latency_ms)
+                    : root.phaseDetail(card.dev)
                 color: card.dev ? root.phaseColor(card.dev.phase) : Kirigami.Theme.textColor
                 wrapMode: Text.Wrap
             }
@@ -1062,6 +1304,96 @@ PlasmoidItem {
         actionText: i18n("Stop now")
         onActivated: root.chooseDevice(device)
         onActionTriggered: root.stopRoom(device.sink_name)
+    }
+
+    // An app's stream and the output it plays on, which a menu changes.
+    component AppRow: RowLayout {
+        id: app
+        property var stream: null
+        readonly property var props: stream ? stream.properties : ({})
+        readonly property string appName: props["application.name"] || (stream && stream.client ? stream.client.name : "")
+            || (stream ? stream.name : "")
+        readonly property string sinkName: stream ? (root.sinkNames[stream.deviceIndex] || "") : ""
+        // "" is this computer. Rebuilt only when the list changes, not with every
+        // status update, so an open menu stays as it is.
+        readonly property var currentOutputs: [{ text: i18n("This computer"), sink: "" }].concat(
+            root.devices.filter(d => d.phase !== "unavailable" || d.sink_name === sinkName)
+                .map(d => ({ text: d.friendly_name, sink: d.sink_name })))
+        property var outputs: []
+        Component.onCompleted: outputs = currentOutputs
+        onCurrentOutputsChanged: if (JSON.stringify(currentOutputs) !== JSON.stringify(outputs))
+            outputs = currentOutputs
+        spacing: Kirigami.Units.largeSpacing
+        Layout.leftMargin: Kirigami.Units.largeSpacing
+        Layout.rightMargin: Kirigami.Units.smallSpacing
+        Layout.topMargin: Kirigami.Units.smallSpacing
+        Layout.bottomMargin: Kirigami.Units.smallSpacing
+
+        Kirigami.Icon {
+            source: app.props["application.icon_name"] || "audio-x-generic"
+            fallback: "audio-x-generic"
+            Layout.preferredWidth: Kirigami.Units.iconSizes.smallMedium
+            Layout.preferredHeight: Kirigami.Units.iconSizes.smallMedium
+        }
+        ColumnLayout {
+            Layout.fillWidth: true
+            spacing: 0
+            PlasmaComponents3.Label {
+                Layout.fillWidth: true
+                text: app.appName
+                elide: Text.ElideRight
+            }
+            PlasmaComponents3.Label {
+                Layout.fillWidth: true
+                visible: text !== "" && text !== app.appName
+                text: app.stream ? app.stream.name : ""
+                font: Kirigami.Theme.smallFont
+                opacity: 0.7
+                elide: Text.ElideRight
+            }
+        }
+        PlasmaComponents3.ToolButton {
+            // The output it plays on; a click opens the others. (Plasma's ComboBox
+            // loops on its width in a row like this one.)
+            id: outputButton
+            readonly property string current: app.sinkName.startsWith("sound-cast.") ? app.sinkName : ""
+            readonly property var currentOutput: app.outputs.find(o => o.sink === current) || app.outputs[0]
+            Layout.maximumWidth: Kirigami.Units.gridUnit * 9
+            text: currentOutput ? currentOutput.text : ""
+            icon.name: current ? "" : "computer-symbolic"
+            icon.source: current ? root.castIcon : ""
+            display: PlasmaComponents3.AbstractButton.TextBesideIcon
+            down: pressed || outputMenu.opened
+            // A press on the button leaves the menu open for the click to close it.
+            onClicked: outputMenu.opened ? outputMenu.close()
+                : outputMenu.popup(outputButton, 0, outputButton.height)
+            Accessible.name: i18n("Output of %1", app.appName)
+            PlasmaComponents3.ToolTip.text: Accessible.name
+            PlasmaComponents3.ToolTip.visible: hovered && !outputMenu.opened
+
+            PlasmaComponents3.Menu {
+                id: outputMenu
+                closePolicy: QQC2.Popup.CloseOnEscape | QQC2.Popup.CloseOnPressOutsideParent
+                Instantiator {
+                    model: app.outputs
+                    delegate: PlasmaComponents3.MenuItem {
+                        required property var modelData
+                        text: modelData.text
+                        checkable: true
+                        checked: modelData.sink === outputButton.current
+                        // The click toggled the mark: back to the output it plays on,
+                        // which a move then changes.
+                        onTriggered: {
+                            checked = Qt.binding(() => modelData.sink === outputButton.current)
+                            if (modelData.sink !== outputButton.current)
+                                root.moveStream(app.stream.index, modelData.sink)
+                        }
+                    }
+                    onObjectAdded: (index, object) => outputMenu.insertItem(index, object)
+                    onObjectRemoved: (index, object) => outputMenu.removeItem(object)
+                }
+            }
+        }
     }
 
     // Inline confirmation under a device another app took.

@@ -1,9 +1,10 @@
 #!/bin/bash
 # Move the audio to a sound-cast Chromecast sink, or back to the local output.
 #
-#   sound-cast-move SINK     make SINK the default output and move every stream to it
-#   sound-cast-move --local  move the streams that play on a Chromecast back to a local sink
+#   sound-cast-move SINK     make SINK the default output and move the streams to it
+#   sound-cast-move --local  move the streams on the Chromecast back to a local sink
 #   sound-cast-move --local-sink   print the local sink that --local would use
+#   sound-cast-move --stream INDEX SINK|--local   move one stream only, the default stays
 set -euo pipefail
 
 local_sinks() {
@@ -42,6 +43,18 @@ if best:
     local_sinks | head -1
 }
 
+# True when a sink of that name exists. (awk reads everything: with grep -q under
+# pipefail, pactl could die of SIGPIPE and fail the check.)
+sink_exists() {
+    pactl list short sinks | awk -v t="$1" '$2 == t { found = 1 } END { exit !found }'
+}
+
+# A stream sent to a room of its own (other than the default output) stays there
+# when the default output moves.
+routed_apart() {
+    [[ "$1" == sound-cast.* && "$1" != "$2" ]]
+}
+
 # "INDEX SINK_NAME" for every sink-input
 sink_inputs() {
     local -A names
@@ -58,12 +71,30 @@ case "${1:-}" in
     --local-sink)
         local_sink
         ;;
+    --stream)
+        index=${2:-}
+        target=${3:-}
+        [[ "$index" =~ ^[0-9]+$ && -n "$target" ]] \
+            || { echo "usage: sound-cast-move --stream INDEX SINK|--local" >&2; exit 2; }
+        if [[ "$target" == --local ]]; then
+            target=$(local_sink)
+            [[ -n "$target" ]] || { echo "error: no local sink found" >&2; exit 1; }
+        fi
+        sink_exists "$target" || { echo "error: no sink named '$target'" >&2; exit 1; }
+        pactl move-sink-input "$index" "$target"
+        echo "Stream $index -> $target"
+        ;;
     --local)
+        previous=$(pactl get-default-sink 2>/dev/null || true)
         target=$(local_sink)
         [[ -n "$target" ]] || { echo "error: no local sink found" >&2; exit 1; }
         pactl set-default-sink "$target"
+        # From a room: its streams come back, those in other rooms stay. Already
+        # local: every stream on a Chromecast comes back.
         while read -r idx sink; do
-            [[ "$sink" == sound-cast.* ]] && pactl move-sink-input "$idx" "$target"
+            [[ "$sink" == sound-cast.* ]] || continue
+            [[ "$previous" == sound-cast.* && "$sink" != "$previous" ]] && continue
+            pactl move-sink-input "$idx" "$target"
         done < <(sink_inputs)
         echo "Audio -> $target"
         ;;
@@ -73,11 +104,13 @@ case "${1:-}" in
         ;;
     *)
         target=$1
-        pactl list short sinks | awk '{print $2}' | grep -qxF "$target" \
-            || { echo "error: no sink named '$target'" >&2; exit 1; }
+        sink_exists "$target" || { echo "error: no sink named '$target'" >&2; exit 1; }
+        previous=$(pactl get-default-sink 2>/dev/null || true)
         pactl set-default-sink "$target"
         while read -r idx sink; do
-            [[ "$sink" != "$target" ]] && pactl move-sink-input "$idx" "$target"
+            [[ "$sink" == "$target" ]] && continue
+            routed_apart "$sink" "$previous" && continue
+            pactl move-sink-input "$idx" "$target"
         done < <(sink_inputs)
         echo "Audio -> $target"
         ;;

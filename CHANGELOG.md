@@ -4,6 +4,28 @@ All notable changes to the sound-cast Plasma widget. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- A volume slider and a mute button on the card of every room that plays.
+- The card shows the track that plays and the room's delay.
+- An "Apps" section: each app's stream can play on its own output, one app in a
+  room and the others here. `sound-cast-move --stream INDEX SINK|--local` does it
+  from the command line.
+- Notifications when another app takes a Chromecast (with a "Take back" button), when
+  a room fails, and when a Chromecast does not fetch the audio. At most one for each
+  room and kind every 5 minutes; they can be turned off in the settings.
+- "Look for Chromecasts again" in the menu.
+
+### Changed
+
+- Moving the default output leaves alone the streams sent to another room.
+- The event log explains the new events: pause, play and stop on the Chromecast,
+  and rescans.
+
+The volume, the rescan, the track and the delay need a sound-cast newer than 0.1.1.
+
 ## [0.1.1] - 2026-11-10
 
 - "Add Widgets" shows the colour sound-cast logo; it needs sound-cast 0.1.1, which
@@ -27,5 +49,6 @@ First public release.
 - English and Italian.
 - Packages for Arch Linux, Debian/Ubuntu and Fedora, built on every tag.
 
+[Unreleased]: https://github.com/iupsilon/plasma-applet-sound-cast/compare/v0.1.1...HEAD
 [0.1.1]: https://github.com/iupsilon/plasma-applet-sound-cast/releases/tag/v0.1.1
 [0.1.0]: https://github.com/iupsilon/plasma-applet-sound-cast/releases/tag/v0.1.0
