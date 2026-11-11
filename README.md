@@ -48,8 +48,9 @@ module.
 ## Requirements
 
 - [sound-cast](https://github.com/iupsilon/sound-cast) 0.1.0 or later, with its
-  `sound-cast.service` user unit; the volume slider, the track, the delay and
-  "Look for Chromecasts again" need a version newer than 0.1.1
+  `sound-cast.service` user unit; the volume slider and mute button, the track,
+  the delay and "Look for Chromecasts again" need a version newer than 0.1.1,
+  and stay hidden or greyed out with an older one
 - Plasma 6 with `plasma-pa` and `plasma5support`
 - `pactl` (libpulse) with a PulseAudio server (`pipewire-pulse`), `python3`
 - systemd user services

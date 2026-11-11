@@ -24,7 +24,8 @@ All notable changes to the sound-cast Plasma widget. The format follows
 - The event log explains the new events: pause, play and stop on the Chromecast,
   and rescans.
 
-The volume, the rescan, the track and the delay need a sound-cast newer than 0.1.1.
+The volume and mute, the rescan, the track and the delay need a sound-cast newer
+than 0.1.1; with an older one these controls stay hidden or greyed out.
 
 ## [0.1.1] - 2026-11-10
 

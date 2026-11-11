@@ -55,6 +55,8 @@ PlasmoidItem {
     readonly property bool serviceOn: unitActive === "active" || unitActive === "activating" || unitActive === "reloading"
     readonly property bool autoRestarting: unitActive === "activating" && unitSub === "auto-restart"
     readonly property bool connected: pstatus !== null
+    // Volume, mute and rescan came with the Version property (after 0.1.1).
+    readonly property bool controls: connected && daemonProps.properties.Version !== undefined
     readonly property var devices: connected ? sortedDevices(pstatus.devices.map(normalized)) : []
     // Rooms with a Cast session open or being retried; several can play at once.
     readonly property var activeDevices: devices.filter(d => isActive(d))
@@ -679,7 +681,7 @@ PlasmoidItem {
                         PlasmaComponents3.MenuItem {
                             text: i18n("Look for Chromecasts again")
                             icon.name: "view-refresh-symbolic"
-                            enabled: root.connected
+                            enabled: root.controls
                             onTriggered: root.rescan()
                         }
                         PlasmaComponents3.MenuSeparator {}
@@ -901,7 +903,7 @@ PlasmoidItem {
             RowLayout {
                 // The room's volume: sound-cast sets it on its sink and on the device.
                 Layout.fillWidth: true
-                visible: card.dev !== null && card.dev.volume !== null
+                visible: root.controls && card.dev !== null && card.dev.volume !== null
                 spacing: Kirigami.Units.smallSpacing
                 PlasmaComponents3.ToolButton {
                     readonly property bool muted: card.dev !== null && card.dev.muted
