@@ -1,0 +1,465 @@
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the org.soundcast.status package.
+#
+# SPDX-FileCopyrightText: 2026 Heimen Stoffels <vistausss@fastmail.com>
+msgid ""
+msgstr ""
+"Project-Id-Version: org.soundcast.status\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-11-11 19:04+0100\n"
+"PO-Revision-Date: 2026-11-14 10:50+0100\n"
+"Last-Translator: Heimen Stoffels <vistausss@fastmail.com>\n"
+"Language-Team: Dutch\n"
+"Language: nl_NL\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: Lokalize 26.08.3\n"
+
+#: package/contents/ui/configGeneral.qml:13
+msgid "systemd user unit:"
+msgstr "systemd-gebruikersunit:"
+
+#: package/contents/ui/configGeneral.qml:17
+msgid "Notifications:"
+msgstr "Meldingen:"
+
+#: package/contents/ui/configGeneral.qml:18
+msgid "When another app takes a Chromecast, or a room fails"
+msgstr ""
+"Als een ander programma een Chromecast gebruikt of als een kamer niet beschikb"
+"aar is"
+
+#: package/contents/ui/main.qml:158
+msgid "Ready"
+msgstr "Gereed"
+
+#: package/contents/ui/main.qml:159
+msgid "Not reachable"
+msgstr "Onbereikbaar"
+
+#: package/contents/ui/main.qml:160
+msgid "Connecting"
+msgstr "Bezig met verbinden…"
+
+#: package/contents/ui/main.qml:161
+msgid "Starting the receiver"
+msgstr "Bezig met starten van ontvanger…"
+
+#: package/contents/ui/main.qml:162
+msgid "Loading on the Chromecast"
+msgstr "Bezig met laden op Chromecast…"
+
+#: package/contents/ui/main.qml:163 package/contents/ui/main.qml:214
+msgid "Playing"
+msgstr "Wordt afgespeeld"
+
+#: package/contents/ui/main.qml:164
+msgid "Buffering"
+msgstr "Wordt gebufferd"
+
+#: package/contents/ui/main.qml:165
+msgid "Paused"
+msgstr "Gepauzeerd"
+
+#: package/contents/ui/main.qml:166
+msgid "No audio"
+msgstr "Geen audio"
+
+#: package/contents/ui/main.qml:167
+msgid "Restarting"
+msgstr "Bezig met herstarten…"
+
+#: package/contents/ui/main.qml:168
+msgid "In use by another app"
+msgstr "In gebruik door een ander programma"
+
+#: package/contents/ui/main.qml:177
+msgid "No longer on the network, removed in %1 s"
+msgstr ""
+"De netwerkverbinding is verbroken; verwijdering vindt plaats over %1 sec."
+
+#: package/contents/ui/main.qml:178
+msgid "Connecting to the Chromecast…"
+msgstr "Bezig met verbinden met Chromecast…"
+
+#: package/contents/ui/main.qml:179
+msgid "Starting the receiver on the Chromecast…"
+msgstr "Bezig met starten van ontvanger op Chromecast…"
+
+#: package/contents/ui/main.qml:180
+msgid "Loading on the Chromecast… %1 s"
+msgstr "Bezig met laden op de Chromecast… %1 sec."
+
+#: package/contents/ui/main.qml:181
+msgid "Paused on the Chromecast"
+msgstr "Gepauzeerd op de Chromecast"
+
+#: package/contents/ui/main.qml:182
+msgid "No audio, stops in %1 s"
+msgstr "Geen audio; wordt over %1 sec. gestopt"
+
+#: package/contents/ui/main.qml:184
+msgid "Retrying in %1 s: %2"
+msgstr "Nieuwe poging %1 sec.: %2"
+
+#: package/contents/ui/main.qml:184
+msgid "Retrying…"
+msgstr "Bezig met opnieuw proberen…"
+
+#: package/contents/ui/main.qml:186 package/contents/ui/main.qml:216
+msgid "%1 took the Chromecast"
+msgstr "%1 heeft de Chromecast overgenomen"
+
+#: package/contents/ui/main.qml:186 package/contents/ui/main.qml:216
+msgid "Another app took the Chromecast"
+msgstr "Een ander programma heeft de Chromecast overgenomen"
+
+#: package/contents/ui/main.qml:209
+msgid "sound-cast started"
+msgstr "sound-cast is gestart"
+
+#: package/contents/ui/main.qml:210
+msgid "Found on the network"
+msgstr "Aangetroffen op netwerk"
+
+#: package/contents/ui/main.qml:211
+msgid "Gone from the network"
+msgstr "Verdwenen van netwerk"
+
+#: package/contents/ui/main.qml:212
+msgid "Back on the network"
+msgstr "Terug op het netwerk"
+
+#: package/contents/ui/main.qml:213
+msgid "Removed: gone from the network for a minute"
+msgstr "Verwijderd: langer dan één minuut verdwenen van netwerk"
+
+#: package/contents/ui/main.qml:215
+msgid "No audio for %1 s, stopped"
+msgstr "Er was %1 sec. lang geen audio; gestopt"
+
+#: package/contents/ui/main.qml:217
+msgid "Taken back"
+msgstr "Teruggenomen"
+
+#: package/contents/ui/main.qml:218
+msgid "Stopped"
+msgstr "Gestopt"
+
+#: package/contents/ui/main.qml:219
+msgid "%1, retrying in %2 s"
+msgstr "%1 — nieuwe poging over %2 sec."
+
+#: package/contents/ui/main.qml:220
+msgid ""
+"The Chromecast did not fetch the audio: is port %1/tcp open in the firewall?"
+msgstr ""
+"De Chromecast heeft de audio niet overgenomen: is poort %1/tcp geopend in de f"
+"irewall?"
+
+#: package/contents/ui/main.qml:221
+msgid "Looking for Chromecasts again"
+msgstr "Bezig met opnieuw zoeken…"
+
+#: package/contents/ui/main.qml:222
+msgid "Paused on the Chromecast, the player paused too"
+msgstr "Gepauzeerd op de Chromecast en speler"
+
+#: package/contents/ui/main.qml:223
+msgid "Resumed on the Chromecast, the player resumed too"
+msgstr "Hervat op de Chromecast en speler"
+
+#: package/contents/ui/main.qml:224
+msgid "Stopped on the Chromecast, the player paused"
+msgstr "Gestopt op de Chromecast en speler"
+
+#: package/contents/ui/main.qml:231
+msgid "Starting, looking for Chromecasts…"
+msgstr "Bezig met starten en zoeken naar Chromecasts…"
+
+#: package/contents/ui/main.qml:233
+msgid "Stopping…"
+msgstr "Bezig met stoppen…"
+
+#: package/contents/ui/main.qml:235
+msgid "sound-cast stopped unexpectedly, restarting automatically"
+msgstr "soud-cast is onverwacht gestopt, maar wordt automatisch herstart"
+
+#: package/contents/ui/main.qml:237 package/contents/ui/main.qml:810
+msgid "sound-cast stopped with an error"
+msgstr "sound-cast is gestopt vanwege een foutmelding"
+
+#: package/contents/ui/main.qml:239
+msgid "Off"
+msgstr "Uit"
+
+#: package/contents/ui/main.qml:241 package/contents/ui/main.qml:814
+msgid "Connecting to sound-cast…"
+msgstr "Bezig met verbinden met sound-cast…"
+
+#: package/contents/ui/main.qml:244
+msgid "Playing in %1 room"
+msgid_plural "Playing in %1 rooms"
+msgstr[0] "Wordt afgespeeld in %1 kamer"
+msgstr[1] "Wordt afgespeeld in %1 kamers"
+
+#: package/contents/ui/main.qml:246 package/contents/ui/main.qml:1587
+msgid "%1: %2"
+msgstr "%1: %2"
+
+#: package/contents/ui/main.qml:248
+msgid "%1 selected, waiting for audio"
+msgstr "%1 gekozen — aan het wachten op audio"
+
+#: package/contents/ui/main.qml:250
+msgid "No Chromecast found on this network"
+msgstr "Er is geen Chromecast aangetroffen op het netwerk"
+
+#: package/contents/ui/main.qml:250
+msgid "On, %1 device ready"
+msgid_plural "On, %1 devices ready"
+msgstr[0] "Aan; %1 apparaat gereed"
+msgstr[1] "Aan; %1 apparaten gereed"
+
+#: package/contents/ui/main.qml:324
+msgid "%1 – %2"
+msgstr "%1 – %2"
+
+#: package/contents/ui/main.qml:419 package/contents/ui/main.qml:1406
+msgid "Take back"
+msgstr "Overnemen"
+
+#: package/contents/ui/main.qml:564 package/contents/ui/main.qml:666
+msgid "Start sound-cast at login"
+msgstr "Sound-cast automatisch starten"
+
+#: package/contents/ui/main.qml:572 package/contents/ui/main.qml:674
+msgid "Open log"
+msgstr "Logboek openen"
+
+#: package/contents/ui/main.qml:651
+msgid "Stop sound-cast"
+msgstr "Sound-cast stoppen"
+
+#: package/contents/ui/main.qml:651 package/contents/ui/main.qml:834
+msgid "Start sound-cast"
+msgstr "Sound-cast starten"
+
+#: package/contents/ui/main.qml:660
+msgid "More options"
+msgstr "Meer opties"
+
+#: package/contents/ui/main.qml:679
+msgid "Look for Chromecasts again"
+msgstr "Opnieuw zoeken naar Chromecasts"
+
+#: package/contents/ui/main.qml:686
+msgid "Configure widget…"
+msgstr "Widget instellen…"
+
+#: package/contents/ui/main.qml:717
+msgid "Output"
+msgstr "Uitvoer"
+
+#: package/contents/ui/main.qml:735 package/contents/ui/main.qml:1318
+msgid "This computer"
+msgstr "Deze computer"
+
+#: package/contents/ui/main.qml:738 package/contents/ui/main.qml:1287
+msgid "Switching…"
+msgstr "Bezig met overschakelen…"
+
+#: package/contents/ui/main.qml:738
+msgid "Audio plays here"
+msgstr "Audio hier afspelen"
+
+#: package/contents/ui/main.qml:740
+msgid "Play the audio on this computer"
+msgstr "Speel de audio af op deze computer"
+
+#: package/contents/ui/main.qml:766
+msgid "Apps"
+msgstr "Programma's"
+
+#: package/contents/ui/main.qml:808
+msgid "sound-cast stopped unexpectedly"
+msgstr "sound-cast is onverwacht gestopt"
+
+#: package/contents/ui/main.qml:812
+msgid "Starting sound-cast…"
+msgstr "Bezig met starten van sound-cast…"
+
+#: package/contents/ui/main.qml:812
+msgid "sound-cast is off"
+msgstr "sound-cast is uitgeschakeld"
+
+#: package/contents/ui/main.qml:814
+msgid "Looking for Chromecasts…"
+msgstr "Bezig met zoeken naar Chromecasts…"
+
+#: package/contents/ui/main.qml:815
+msgid "No Chromecast found"
+msgstr "Er is geen Chromecast aangetroffen"
+
+#: package/contents/ui/main.qml:819
+msgid "systemd restarts it in a few seconds (restart %1)."
+msgid_plural "systemd restarts it in a few seconds (restart %1)."
+msgstr[0] "systemd zal het over enkele seconden herstarten (%1 herstarten)."
+msgstr[1] "systemd zal het over enkele seconden herstarten (%1 herstarten)."
+
+#: package/contents/ui/main.qml:821
+msgid "See the log with: journalctl --user -u %1"
+msgstr "Bekijk het logboek met de opdracht ‘journalctl --user -u %1’"
+
+#: package/contents/ui/main.qml:823
+msgid "Turn it on to use the Chromecasts on this network as audio outputs."
+msgstr ""
+"Schakel in om Chromecasts op dit netwerk als audio-uitvoer te gebruiken."
+
+#: package/contents/ui/main.qml:827
+msgid "If this takes long, see the log with: journalctl --user -u %1"
+msgstr ""
+"Als het te lang duurt, bekijk dan het logboek met de opdracht ‘journalctl --us"
+"er -u %1’"
+
+#: package/contents/ui/main.qml:828
+msgid ""
+"sound-cast keeps looking. The PC must be on the same network as the "
+"Chromecasts."
+msgstr ""
+"sound-cast blijft zoeken. De computer moet zich op hetzelfde netwerk bevinden "
+"als de "
+"Chromecasts."
+
+#: package/contents/ui/main.qml:834
+msgid "Try again"
+msgstr "Opnieuw proberen"
+
+#: package/contents/ui/main.qml:892
+msgid "Back to PC"
+msgstr "Terug naar computer"
+
+#: package/contents/ui/main.qml:895
+msgid "Play the audio on this computer again"
+msgstr "Speel de audio op deze computer af"
+
+#: package/contents/ui/main.qml:910
+msgid "Unmute"
+msgstr "Ontdempen"
+
+#: package/contents/ui/main.qml:910
+msgid "Mute"
+msgstr "Dempen"
+
+#: package/contents/ui/main.qml:947
+msgid "Volume of %1"
+msgstr "Volumeniveau van %1"
+
+#: package/contents/ui/main.qml:964
+msgid "Muted"
+msgstr "Gedempt"
+
+#: package/contents/ui/main.qml:964
+#, javascript-format
+msgid "%1%"
+msgstr "%1%"
+
+#: package/contents/ui/main.qml:982
+msgid "%1 · %2 ms delay"
+msgstr "%1 · %2 ms vertraging"
+
+#: package/contents/ui/main.qml:1011
+msgid ""
+"The Chromecast has not fetched the audio yet: is port %1/tcp open in the "
+"firewall?"
+msgstr ""
+"De Chromecast heeft de audio nog niet overgenomen: is poort %1/tcp geopend in "
+"de "
+"firewall?"
+
+#: package/contents/ui/main.qml:1012
+msgid "The Chromecast is fetching the audio"
+msgstr "De Chromecast neemt de audio over"
+
+#: package/contents/ui/main.qml:1013
+msgid "Waiting for the Chromecast to fetch the audio"
+msgstr "Bezig met wacht op Chromecast-overname van audio…"
+
+#: package/contents/ui/main.qml:1029
+msgid ""
+"Buffered %1 times in the last minute: the Chromecast seems stuck, unplug it "
+"and plug it back in"
+msgstr ""
+"Er is de afgelopen minuut %1 keer gebufferd; de Chromecast lijkt te zijn vastg"
+"elopen. Koppel hem "
+"af en weer aan."
+
+#: package/contents/ui/main.qml:1030
+msgid "Buffered %1 time in the last minute: weak Wi-Fi signal?"
+msgid_plural "Buffered %1 times in the last minute: weak Wi-Fi signal?"
+msgstr[0] ""
+"Er is de afgelopen minuut %1 keer gebufferd; is het wifibereik goed?"
+msgstr[1] ""
+"Er is de afgelopen minuut %1 keer gebufferd; is het wifibereik goed?"
+
+#: package/contents/ui/main.qml:1040
+msgid "Connect"
+msgstr "Verbinden"
+
+#: package/contents/ui/main.qml:1040
+msgid "Start"
+msgstr "Starten"
+
+#: package/contents/ui/main.qml:1040
+msgid "Load"
+msgstr "Laden"
+
+#: package/contents/ui/main.qml:1040
+msgid "Play"
+msgstr "Afspelen"
+
+#: package/contents/ui/main.qml:1289
+msgid "No audio, stops in %1 s · click to play here again"
+msgstr "Geen audio; wordt over %1 sec. gestopt  —klik om hier af te spelen"
+
+#: package/contents/ui/main.qml:1295
+msgid "Selected, starts when audio plays"
+msgstr "Gekozen; wordt gestart zodra er audio wordt afgespeeld"
+
+#: package/contents/ui/main.qml:1301
+msgid "Play the audio on %1"
+msgstr "Audio afspelen op %1"
+
+#: package/contents/ui/main.qml:1303
+msgid "Stop now"
+msgstr "Nu stoppen"
+
+#: package/contents/ui/main.qml:1367
+msgid "Output of %1"
+msgstr "Uitvoer van %1"
+
+#: package/contents/ui/main.qml:1401
+msgid "the other app"
+msgstr "het andere programma"
+
+#: package/contents/ui/main.qml:1401
+msgid "Stop %1 and play here?"
+msgstr "Wil je %1 stoppen en alles hier afspelen?"
+
+#: package/contents/ui/main.qml:1413
+msgid "Cancel"
+msgstr "Annuleren"
+
+#: package/contents/ui/main.qml:1451
+msgid "Hide the events"
+msgstr "Acties verbergen"
+
+#: package/contents/ui/main.qml:1451
+msgid "Show all events"
+msgstr "Acties tonen"
+
+#: package/contents/ui/main.qml:1487
+msgid "Recent events"
+msgstr "Recente acties"
